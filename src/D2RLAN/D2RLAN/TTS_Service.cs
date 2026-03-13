@@ -20,7 +20,7 @@ namespace D2RLAN
         private static SpeechSynthesizer _tts;
         private static bool _running = false;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(HomeDrawerViewModel));
-        private static string _soundPath;
+        private static List<string> _soundPaths;
         private static int _selectedVoiceIndex = 0;
         private static VoiceInformation[] _allVoices;
         private static string _configPath;
@@ -36,7 +36,15 @@ namespace D2RLAN
 
             // Absolute config path
             _configPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\D2R\lootfilter_config.lua"));
-            _soundPath = Path.Combine(shellViewModel.SelectedModDataFolder, "D2RLAN", "Filters", "Sounds");
+
+            // Primary sound path
+            string d2rLanSoundPath = Path.Combine(shellViewModel.SelectedModDataFolder, "D2RLAN", "Filters", "Sounds");
+
+            // Secondary sound path
+            string myFiltersSoundPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\D2R\My Filters\Sounds"));
+
+            // Store both paths
+            _soundPaths = new List<string> { d2rLanSoundPath, myFiltersSoundPath };
 
             // Load voices
             _allVoices = SpeechSynthesizer.AllVoices.ToArray();
@@ -51,10 +59,19 @@ namespace D2RLAN
 
             _running = true;
             _logger.Info("[TTS] Service started.");
-            _logger.Info($"[TTS] Sound folder: {_soundPath}");
+            _logger.Info($"[TTS] Sound folder: {_soundPaths}");
             _logger.Info($"[TTS] Config file: {_configPath}");
             _logger.Info("[TTS] Process ID: " + Environment.ProcessId);
         }
+
+        bool SoundFileExists(string fileName)
+        {
+            return _soundPaths.Any(path =>
+                Directory.Exists(path) &&
+                File.Exists(Path.Combine(path, fileName))
+            );
+        }
+
 
         private static void ListVoices()
         {
@@ -169,7 +186,8 @@ namespace D2RLAN
         {
             try
             {
-                string path = Path.Combine(_soundPath, file);
+                string? path = _soundPaths.Where(Directory.Exists).Select(p => Path.Combine(p, file)).FirstOrDefault(File.Exists);
+
                 if (!File.Exists(path))
                 {
                     _logger.Warn($"[TTS] Sound not found: {path}");
@@ -179,7 +197,7 @@ namespace D2RLAN
                 var player = new MediaPlayer();
                 _activePlayers.Add(player);
 
-                player.Open(new Uri(path));
+                player.Open(new Uri(path, UriKind.Absolute));
                 player.Volume = 1.0;
 
                 player.MediaEnded += (s, e) =>

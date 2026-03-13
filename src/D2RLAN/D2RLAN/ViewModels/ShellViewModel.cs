@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 using Caliburn.Micro;
 using ILog = log4net.ILog;
 using LogManager = log4net.LogManager;
@@ -51,7 +51,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     private UserControl _userControl;
     private IWindowManager _windowManager;
     private string _title = "D2RLAN";
-    private string appVersion = "1.9.5";
+    private string appVersion = "1.9.9";
     private string _gamePath;
     private bool _diabloInstallDetected;
     private bool _customizationsEnabled;
@@ -239,12 +239,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             }
 
             if (!eventActive)
-            {
-                string backupFolder = SelectedModDataFolder + "data_noevent";
-                CopyAllFiles(backupFolder, SelectedModDataFolder);
-
                 _logger.Info("Event is over, leaving event...");
-            }
         }
     }
 
@@ -1295,6 +1290,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         {
             if (!File.Exists(ConfigFilePath))
                 File.Copy(freshConfigFilePath, ConfigFilePath);
+            else
+                MergeHudTemplateMemoryConfigs(freshConfigFilePath, ConfigFilePath);
         }
 
         if (!Directory.Exists(uiLayoutsPath))
@@ -4619,6 +4616,20 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
 
 
+        // Ensure HUD config contains all template memory entries before applying TCP patch
+        try
+        {
+            string hudTemplatePath = "HUDConfig_Template.json";
+            if (File.Exists(hudTemplatePath) && File.Exists(configPath))
+            {
+                MergeHudTemplateMemoryConfigs(hudTemplatePath, configPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"Failed to pre-merge HUD template into config before ApplyTCPPatch: {ex.Message}");
+        }
+
         string processName = "../D2R/d2r.exe";
         string arguments = UserSettings.CurrentD2RArgs;
 
@@ -4769,7 +4780,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             rowCount = lines.Length;
         }
         if (!File.Exists(filePath) && ModInfo.Name == "RMD-MP")
-            rowCount = 748;
+            rowCount = 755;
 
         return rowCount;
     }
@@ -5016,6 +5027,78 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Ensures the mod HUD config contains all MemoryConfigs entries present in the template file.
+    /// Uses the Name/name field of each entry to decide if it already exists; existing entries are
+    /// never modified, only missing ones are appended.
+    /// </summary>
+    private static void MergeHudTemplateMemoryConfigs(string templatePath, string configPath)
+    {
+        if (!File.Exists(templatePath) || !File.Exists(configPath))
+            return;
+
+        try
+        {
+            var templateJson = StripJsonComments(File.ReadAllText(templatePath));
+            var configJson = StripJsonComments(File.ReadAllText(configPath));
+
+            var templateRoot = JsonNode.Parse(templateJson)?.AsObject();
+            var configRoot = JsonNode.Parse(configJson)?.AsObject();
+            if (templateRoot == null || configRoot == null)
+                return;
+
+            if (templateRoot["MemoryConfigs"] is not JsonArray templateMem)
+                return;
+
+            if (configRoot["MemoryConfigs"] is not JsonArray modMem)
+            {
+                // If the mod config has no MemoryConfigs, copy the entire array from the template.
+                configRoot["MemoryConfigs"] = templateMem.DeepClone();
+            }
+            else
+            {
+                foreach (var templateNode in templateMem.OfType<JsonObject>())
+                {
+                    string? templateName = GetMemoryEntryName(templateNode);
+                    if (string.IsNullOrWhiteSpace(templateName))
+                        continue;
+
+                    bool exists = modMem
+                        .OfType<JsonObject>()
+                        .Any(m =>
+                        {
+                            string? modName = GetMemoryEntryName(m);
+                            return modName != null &&
+                                   string.Equals(modName, templateName, StringComparison.OrdinalIgnoreCase);
+                        });
+
+                    if (!exists)
+                    {
+                        modMem.Add(templateNode.DeepClone());
+                    }
+                }
+            }
+
+            File.WriteAllText(
+                configPath,
+                configRoot.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"Failed to merge HUD template MemoryConfigs into mod config: {ex.Message}");
+        }
+    }
+
+    private static string? GetMemoryEntryName(JsonObject obj)
+    {
+        JsonNode? nameNode = obj["Name"] ?? obj["name"];
+        return nameNode switch
+        {
+            JsonValue v when v.TryGetValue<string>(out var s) => s,
+            _ => null
+        };
+    }
 
     /*
 

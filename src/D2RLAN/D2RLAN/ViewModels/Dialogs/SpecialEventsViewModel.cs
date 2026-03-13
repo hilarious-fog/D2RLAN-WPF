@@ -483,8 +483,8 @@ public class SpecialEventsViewModel : Screen
                 return;
             }
 
-            // Copy all files from backup to mod folder
-            CopyAllFiles(backupFolder, ShellViewModel.SelectedModDataFolder);
+            Directory.Delete(ShellViewModel.SelectedModDataFolder, true);
+            Directory.Move(backupFolder, ShellViewModel.SelectedModDataFolder);
 
             MessageBox.Show("You have left the Event!");
         }

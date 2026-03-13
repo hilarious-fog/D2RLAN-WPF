@@ -161,63 +161,273 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
     {
         Mods.Clear();
 
-        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.003") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.008"))
+        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.000") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.001"))
         {
-            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/d0swzfshayfkvf077yw2c/0927_idx_p2.zip?rlkey=yx1w7ats6mie9a7nbj8rjcp6k&st=xymgblqq&dl=1");
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/xfauuwisdrazv15en3le9/part_2.zip?rlkey=7z54q10sj8bc6joh64monnt8e&st=pdtn5lam&dl=1");
             _logger.Info("TCP FILES: Part 1 files found in game folder, skipping to part 2");
 
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
             return;
         }
-        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.008") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.013"))
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.001") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.002"))
         {
-            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/kekirhb9iupq32yoxyyvi/0927_idx_p3.zip?rlkey=3ld3fegp5j6budwhx1vw6a14x&st=o9422biw&dl=1");
-            _logger.Info("TCP FILES: Parts 1&2 files found in game folder, skipping to part 3");
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/f8uk62rfe13g6mxyg39o6/part_3.zip?rlkey=r9ajcp3c1qqypxvoassm9txpz&st=eeqrnk98&dl=1");
+            _logger.Info("TCP FILES: Part 2 files found in game folder, skipping to part 3");
 
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
             return;
         }
-        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.013") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.018"))
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.002") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.003"))
         {
-            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/2sd571yc429h169fmjzwa/0927_idx_p4.zip?rlkey=ff8daf427acq0mk4wda01036y&st=f4moofu0&dl=1");
-            _logger.Info("TCP FILES: Parts 1-3 files found in game folder, skipping to part 4");
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/ymp5swx1d3c7dhclk58bg/part_4.zip?rlkey=y2nq4gglb2wzez2tjlfc9a7if&st=xwv5jfk1&dl=1");
+            _logger.Info("TCP FILES: Part 3 files found in game folder, skipping to part 4");
 
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
             return;
         }
-        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.018") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.023"))
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.003") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.004"))
         {
-            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/ixp1dizsevtl6b60cn8bw/0927_idx_p5.zip?rlkey=xai0pttu75qc9iu8iq1mwj74s&st=hb4zyml7&dl=1");
-            _logger.Info("TCP FILES: Parts 1-4 files found in game folder, skipping to part 5");
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/yp73pf9usrfkijirsb8bq/part_5.zip?rlkey=we22ry0bcyq1feyg9thqhi61x&st=unck9lcr&dl=1");
+            _logger.Info("TCP FILES: Part 4 files found in game folder, skipping to part 5");
 
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
             return;
         }
-        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.023") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.027"))
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.004") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.005"))
         {
-            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/h6jgqqkdi2tg94ua4w8sk/0927_idx_p6.zip?rlkey=av43wdttqhiyu9orribogvff8&st=6cs4sji3&dl=1");
-            _logger.Info("TCP FILES: Parts 1-5 files found in game folder, skipping to part 6");
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/5n1sniikhbrxkuyaxkxnx/part_6.zip?rlkey=tjlfflcemq0qks53dt1hsp29y&st=l9q24mbl&dl=1");
+            _logger.Info("TCP FILES: Part 5 files found in game folder, skipping to part 6");
 
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
             return;
         }
-        else if (!File.Exists($@"{ShellViewModel.GamePath}data\data\data.001"))
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.005") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.006"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/a7iupij9kp38g20l7uh3f/part_7.zip?rlkey=s2uhob8xisw35stqsnkarj6d8&st=3fer5z78&dl=1");
+            _logger.Info("TCP FILES: Part 6 files found in game folder, skipping to part 7");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.006") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.007"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/bhc2xcz4lr89wmdwf9zab/part_8.zip?rlkey=y26ifpnofgonw8tbay5eqvrky&st=56e9f0x5&dl=1");
+            _logger.Info("TCP FILES: Part 7 files found in game folder, skipping to part 8");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.007") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.008"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/7szp2x08l9mihvwx6keim/part_9.zip?rlkey=qvn97yhvx71xsnabc07kj85w4&st=r6sj03nr&dl=1");
+            _logger.Info("TCP FILES: Part 8 files found in game folder, skipping to part 9");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.008") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.009"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/shx38qac2w8vp5m3g8qx2/part_10.zip?rlkey=f166orls9wf4753nom9ehk9pg&st=lh531ivj&dl=1");
+            _logger.Info("TCP FILES: Part 9 files found in game folder, skipping to part 10");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.009") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.010"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/kowzlaor8b4fgrzrz32i7/part_11.zip?rlkey=miua5ysyi27downdt1c8wckt3&st=zklplkgi&dl=1");
+            _logger.Info("TCP FILES: Part 10 files found in game folder, skipping to part 11");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.010") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.011"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/z0eiint7e4gp1wvr8xlpp/part_12.zip?rlkey=28lad4j0zp1nlgkj14lzg04gr&st=0fdrfkn4&dl=1");
+            _logger.Info("TCP FILES: Part 11 files found in game folder, skipping to part 12");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.011") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.012"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/n67680s3gmdq86v0px3p1/part_13.zip?rlkey=m619htc0ldkzjgu884juee7ub&st=80s6znzk&dl=1");
+            _logger.Info("TCP FILES: Part 12 files found in game folder, skipping to part 13");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.012") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.013"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/t8ze6fyhvi64n5wcsalbw/part_14.zip?rlkey=rmj63g6r7vmybz4y1skc4mbtc&st=clwazzl7&dl=1");
+            _logger.Info("TCP FILES: Part 13 files found in game folder, skipping to part 14");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.013") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.014"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/vo69ioboy322mjkg7w1i1/part_15.zip?rlkey=yt01qdluv1p8ysvhhb5tlyrp4&st=86kh06zb&dl=1");
+            _logger.Info("TCP FILES: Part 14 files found in game folder, skipping to part 15");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.014") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.015"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/q62mvxvnzu4wo9tlpkfs6/part_16.zip?rlkey=tm3exwg2mlod6k0r8wmwk2ss7&st=8w9vsg6z&dl=1");
+            _logger.Info("TCP FILES: Part 15 files found in game folder, skipping to part 16");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.015") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.016"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/8qpdus1cgobnk9vxnzyxy/part_17.zip?rlkey=nwlao67c1fcc0gxypbjskd606&st=2vbuapgv&dl=1");
+            _logger.Info("TCP FILES: Part 16 files found in game folder, skipping to part 17");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.016") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.017"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/862rol42uj8wf29h86pl7/part_18.zip?rlkey=61z4rwv975hs6w41k6qxbexq4&st=rtcgw3ua&dl=1");
+            _logger.Info("TCP FILES: Part 17 files found in game folder, skipping to part 18");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.017") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.018"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/bo86sojtipupe2uassrkv/part_19.zip?rlkey=osjqfyyqwnop8owicin3cuqdh&st=nmxhxdde&dl=1");
+            _logger.Info("TCP FILES: Part 18 files found in game folder, skipping to part 19");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.018") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.019"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/wa8p39mf2eeyvsvmsrh8s/part_20.zip?rlkey=1hlu3xsw6oeskdbcwu1vov0ce&st=ja978k2e&dl=1");
+            _logger.Info("TCP FILES: Part 19 files found in game folder, skipping to part 20");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.019") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.020"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/g1e6pz0lsmqk94jijml93/part_21.zip?rlkey=alisfgqxz05avl0auxct1bh45&st=kexxsgfl&dl=1");
+            _logger.Info("TCP FILES: Part 20 files found in game folder, skipping to part 21");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.020") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.021"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/bb0zwjn7heppk1t85hh7p/part_22.zip?rlkey=zkguk4pdb6l30bixf4o8vkhom&st=8y59icge&dl=1");
+            _logger.Info("TCP FILES: Part 21 files found in game folder, skipping to part 22");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.021") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.022"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/ly9iuc8v9flqhrogosmac/part_23.zip?rlkey=wnlr9xxso67y8e0p9pts5vf6d&st=nant3hd2&dl=1");
+            _logger.Info("TCP FILES: Part 22 files found in game folder, skipping to part 23");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.022") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.023"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/wjdtbg5wdgx0v0qu9ka0q/part_24.zip?rlkey=uajomuuo2c8a3f7ljpmeqbai5&st=8pzck1ro&dl=1");
+            _logger.Info("TCP FILES: Part 23 files found in game folder, skipping to part 24");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.023") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.024"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/d1nwopfvvbnkoncps75j6/part_25.zip?rlkey=fkyga0ifgqvnc6dm4twzy3mzx&st=33nwtcor&dl=1");
+            _logger.Info("TCP FILES: Part 24 files found in game folder, skipping to part 25");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.024") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.025"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/g5a788wrkpfdpl72xofkj/part_26.zip?rlkey=yd7bhgx7k79m0djjld1ves3h8&st=c5s21pe9&dl=1");
+            _logger.Info("TCP FILES: Part 25 files found in game folder, skipping to part 26");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.025") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.026"))
+        {
+            var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", "https://www.dropbox.com/scl/fi/r0m5253h3g05qa8o3y4d4/part_27.zip?rlkey=mwzsyv8dz3mr6ioj27fn80hp5&st=l00w6lyo&dl=1");
+            _logger.Info("TCP FILES: Part 26 files found in game folder, skipping to part 27");
+
+            Mods.Add(tcpEntry);
+            SelectedMod = tcpEntry;
+            return;
+        }
+        else if (!File.Exists($@"{ShellViewModel.GamePath}data\data\data.000"))
         {
             var tcpEntry = new KeyValuePair<string, string>("TCP Files (Install First)", string.Join(",", new[]
             {
-                "https://www.dropbox.com/scl/fi/h8kj7w67d9wux1fqii1br/0927_idx_p1.zip?rlkey=02s8y2s3x2s2sdtqfx55ehg67&st=1qspfvqk&dl=1",
-                "https://www.dropbox.com/scl/fi/d0swzfshayfkvf077yw2c/0927_idx_p2.zip?rlkey=yx1w7ats6mie9a7nbj8rjcp6k&st=je9a3maa&dl=1",
-                "https://www.dropbox.com/scl/fi/kekirhb9iupq32yoxyyvi/0927_idx_p3.zip?rlkey=3ld3fegp5j6budwhx1vw6a14x&st=o9422biw&dl=1",
-                "https://www.dropbox.com/scl/fi/2sd571yc429h169fmjzwa/0927_idx_p4.zip?rlkey=ff8daf427acq0mk4wda01036y&st=f4moofu0&dl=1",
-                "https://www.dropbox.com/scl/fi/ixp1dizsevtl6b60cn8bw/0927_idx_p5.zip?rlkey=xai0pttu75qc9iu8iq1mwj74s&st=hb4zyml7&dl=1",
-                "https://www.dropbox.com/scl/fi/h6jgqqkdi2tg94ua4w8sk/0927_idx_p6.zip?rlkey=av43wdttqhiyu9orribogvff8&st=6cs4sji3&dl=1"
+                "https://www.dropbox.com/scl/fi/x9kuz93yxwo5mltq9hdoh/part_1.zip?rlkey=qye0qnrrs426rbd7vgcfetu5h&st=033aw4kl&dl=1",
+                "https://www.dropbox.com/scl/fi/xfauuwisdrazv15en3le9/part_2.zip?rlkey=7z54q10sj8bc6joh64monnt8e&st=pdtn5lam&dl=1",
+                "https://www.dropbox.com/scl/fi/f8uk62rfe13g6mxyg39o6/part_3.zip?rlkey=r9ajcp3c1qqypxvoassm9txpz&st=eeqrnk98&dl=1",
+                "https://www.dropbox.com/scl/fi/ymp5swx1d3c7dhclk58bg/part_4.zip?rlkey=y2nq4gglb2wzez2tjlfc9a7if&st=xwv5jfk1&dl=1",
+                "https://www.dropbox.com/scl/fi/yp73pf9usrfkijirsb8bq/part_5.zip?rlkey=we22ry0bcyq1feyg9thqhi61x&st=unck9lcr&dl=1",
+                "https://www.dropbox.com/scl/fi/5n1sniikhbrxkuyaxkxnx/part_6.zip?rlkey=tjlfflcemq0qks53dt1hsp29y&st=l9q24mbl&dl=1",
+                "https://www.dropbox.com/scl/fi/a7iupij9kp38g20l7uh3f/part_7.zip?rlkey=s2uhob8xisw35stqsnkarj6d8&st=3fer5z78&dl=1",
+                "https://www.dropbox.com/scl/fi/bhc2xcz4lr89wmdwf9zab/part_8.zip?rlkey=y26ifpnofgonw8tbay5eqvrky&st=56e9f0x5&dl=1",
+                "https://www.dropbox.com/scl/fi/7szp2x08l9mihvwx6keim/part_9.zip?rlkey=qvn97yhvx71xsnabc07kj85w4&st=r6sj03nr&dl=1",
+                "https://www.dropbox.com/scl/fi/shx38qac2w8vp5m3g8qx2/part_10.zip?rlkey=f166orls9wf4753nom9ehk9pg&st=lh531ivj&dl=1",
+                "https://www.dropbox.com/scl/fi/kowzlaor8b4fgrzrz32i7/part_11.zip?rlkey=miua5ysyi27downdt1c8wckt3&st=zklplkgi&dl=1",
+                "https://www.dropbox.com/scl/fi/z0eiint7e4gp1wvr8xlpp/part_12.zip?rlkey=28lad4j0zp1nlgkj14lzg04gr&st=0fdrfkn4&dl=1",
+                "https://www.dropbox.com/scl/fi/n67680s3gmdq86v0px3p1/part_13.zip?rlkey=m619htc0ldkzjgu884juee7ub&st=80s6znzk&dl=1",
+                "https://www.dropbox.com/scl/fi/t8ze6fyhvi64n5wcsalbw/part_14.zip?rlkey=rmj63g6r7vmybz4y1skc4mbtc&st=clwazzl7&dl=1",
+                "https://www.dropbox.com/scl/fi/vo69ioboy322mjkg7w1i1/part_15.zip?rlkey=yt01qdluv1p8ysvhhb5tlyrp4&st=86kh06zb&dl=1",
+                "https://www.dropbox.com/scl/fi/q62mvxvnzu4wo9tlpkfs6/part_16.zip?rlkey=tm3exwg2mlod6k0r8wmwk2ss7&st=8w9vsg6z&dl=1",
+                "https://www.dropbox.com/scl/fi/8qpdus1cgobnk9vxnzyxy/part_17.zip?rlkey=nwlao67c1fcc0gxypbjskd606&st=2vbuapgv&dl=1",
+                "https://www.dropbox.com/scl/fi/862rol42uj8wf29h86pl7/part_18.zip?rlkey=61z4rwv975hs6w41k6qxbexq4&st=rtcgw3ua&dl=1",
+                "https://www.dropbox.com/scl/fi/bo86sojtipupe2uassrkv/part_19.zip?rlkey=osjqfyyqwnop8owicin3cuqdh&st=nmxhxdde&dl=1",
+                "https://www.dropbox.com/scl/fi/wa8p39mf2eeyvsvmsrh8s/part_20.zip?rlkey=1hlu3xsw6oeskdbcwu1vov0ce&st=ja978k2e&dl=1",
+                "https://www.dropbox.com/scl/fi/g1e6pz0lsmqk94jijml93/part_21.zip?rlkey=alisfgqxz05avl0auxct1bh45&st=kexxsgfl&dl=1",
+                "https://www.dropbox.com/scl/fi/bb0zwjn7heppk1t85hh7p/part_22.zip?rlkey=zkguk4pdb6l30bixf4o8vkhom&st=8y59icge&dl=1",
+                "https://www.dropbox.com/scl/fi/ly9iuc8v9flqhrogosmac/part_23.zip?rlkey=wnlr9xxso67y8e0p9pts5vf6d&st=nant3hd2&dl=1",
+                "https://www.dropbox.com/scl/fi/wjdtbg5wdgx0v0qu9ka0q/part_24.zip?rlkey=uajomuuo2c8a3f7ljpmeqbai5&st=8pzck1ro&dl=1",
+                "https://www.dropbox.com/scl/fi/d1nwopfvvbnkoncps75j6/part_25.zip?rlkey=fkyga0ifgqvnc6dm4twzy3mzx&st=33nwtcor&dl=1",
+                "https://www.dropbox.com/scl/fi/g5a788wrkpfdpl72xofkj/part_26.zip?rlkey=yd7bhgx7k79m0djjld1ves3h8&st=c5s21pe9&dl=1",
+                "https://www.dropbox.com/scl/fi/r0m5253h3g05qa8o3y4d4/part_27.zip?rlkey=mwzsyv8dz3mr6ioj27fn80hp5&st=l00w6lyo&dl=1"
             }));
-            _logger.Info("TCP FILES: Part 1 files not found, downloading both parts...");
+            _logger.Info("TCP FILES: Files not found, downloading all 27 parts...");
             Mods.Add(tcpEntry);
             SelectedMod = tcpEntry;
 
@@ -329,19 +539,61 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
                         int read;
                         var sw = Stopwatch.StartNew();
 
-                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.003") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.008"))
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.000") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.001"))
                             fileIndex = 2;
-                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.008") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.013"))
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.001") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.002"))
                             fileIndex = 3;
-                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.013") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.018"))
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.002") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.003"))
                             fileIndex = 4;
-                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.018") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.023"))
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.003") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.004"))
                             fileIndex = 5;
-                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.023") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.027"))
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.004") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.005"))
                             fileIndex = 6;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.005") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.006"))
+                            fileIndex = 7;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.006") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.007"))
+                            fileIndex = 8;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.007") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.008"))
+                            fileIndex = 9;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.008") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.009"))
+                            fileIndex = 10;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.009") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.010"))
+                            fileIndex = 11;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.010") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.011"))
+                            fileIndex = 12;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.011") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.012"))
+                            fileIndex = 13;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.012") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.013"))
+                            fileIndex = 14;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.013") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.014"))
+                            fileIndex = 15;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.014") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.015"))
+                            fileIndex = 16;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.015") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.016"))
+                            fileIndex = 17;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.016") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.017"))
+                            fileIndex = 18;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.017") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.018"))
+                            fileIndex = 19;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.018") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.019"))
+                            fileIndex = 20;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.019") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.020"))
+                            fileIndex = 21;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.020") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.021"))
+                            fileIndex = 22;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.021") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.022"))
+                            fileIndex = 23;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.022") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.023"))
+                            fileIndex = 24;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.023") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.024"))
+                            fileIndex = 25;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.024") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.025"))
+                            fileIndex = 26;
+                        if (File.Exists($@"{ShellViewModel.GamePath}data\data\data.025") && !File.Exists($@"{ShellViewModel.GamePath}data\data\data.026"))
+                            fileIndex = 27;
 
                         ProgressBarIsIndeterminate = false;
-                        ProgressStatus = $"Downloading part {fileIndex} of 6...";
+                        ProgressStatus = $"Downloading part {fileIndex} of 27...";
 
                         while ((read = await httpStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
