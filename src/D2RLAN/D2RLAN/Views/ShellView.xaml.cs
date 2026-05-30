@@ -1,11 +1,13 @@
-﻿using D2RLAN.Models;
+using D2RLAN.Models;
 using D2RLAN.ViewModels;
 using Microsoft.Win32;
+using Syncfusion.UI.Xaml.NavigationDrawer;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
 
@@ -26,6 +28,60 @@ namespace D2RLAN.Views
         {
             InitializeComponent();
             InitializeTrayIcon();
+            Loaded += ShellView_Loaded;
+        }
+
+        private void ShellView_Loaded(object sender, RoutedEventArgs e)
+        {
+            EnsureMemoryEditsNavigationItem();
+        }
+
+        private void EnsureMemoryEditsNavigationItem()
+        {
+            if (NavigationDrawer == null)
+                return;
+
+            NavigationItem optionsItem = FindNavigationItemByTag(NavigationDrawer, "Options");
+            if (optionsItem == null)
+                return;
+
+            if (optionsItem.Items.OfType<NavigationItem>().Any(item =>
+                    string.Equals(item.Tag as string, "Memory Edits", StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            optionsItem.Items.Add(new NavigationItem
+            {
+                Header = "Memory Edits",
+                Tag = "Memory Edits",
+                Style = (Style)FindResource("NavigationItemGoldStyle")
+            });
+        }
+
+        private static NavigationItem FindNavigationItemByTag(object parent, string tag)
+        {
+            if (parent is NavigationItem item)
+            {
+                if (string.Equals(item.Tag as string, tag, StringComparison.OrdinalIgnoreCase))
+                    return item;
+
+                foreach (object child in item.Items)
+                {
+                    NavigationItem found = FindNavigationItemByTag(child, tag);
+                    if (found != null)
+                        return found;
+                }
+            }
+            else if (parent is SfNavigationDrawer drawer)
+            {
+                foreach (object child in drawer.Items)
+                {
+                    NavigationItem found = FindNavigationItemByTag(child, tag);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
         }
 
         private void InitializeTrayIcon()

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <None Remove="Resources\appSettings.json" />
+    <None Remove="Resources\bankexpansionlayouthd_stashsearch_retail.json" />
+    <None Remove="Resources\bankexpansionlayouthd_stashsearch_rmd.json" />
     <None Remove="Resources\BuffIcons\BuffIcons.zip" />
     <None Remove="Resources\BuffIcons\Images\BuffIconPreview.png" />
     <None Remove="Resources\BuffIcons\Images\Preview_BattleCommand.png" />
@@ -284,6 +286,8 @@
     <None Remove="Resources\Preview\Preview_SuperTK.gif" />
     <None Remove="Resources\SharedStashHardCoreV2.d2i" />
     <None Remove="Resources\SharedStashSoftCoreV2.d2i" />
+    <None Remove="Resources\StashSearch.lowend.sprite" />
+    <None Remove="Resources\StashSearch.sprite" />
     <None Remove="RMD_Logo_New.ico" />
     <None Remove="Views\Dialogs\AITest1.png" />
   </ItemGroup>
@@ -306,6 +310,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\appSettings.json" />
+    <EmbeddedResource Include="Resources\bankexpansionlayouthd_stashsearch_esr.json" />
+    <EmbeddedResource Include="Resources\bankexpansionlayouthd_stashsearch_retail.json" />
+    <EmbeddedResource Include="Resources\bankexpansionlayouthd_stashsearch_rmd.json" />
     <EmbeddedResource Include="Resources\BuffIcons\BuffIcons.zip" />
     <EmbeddedResource Include="Resources\BuffIcons\Images\Preview_BattleCommand.png" />
     <EmbeddedResource Include="Resources\BuffIcons\Images\Preview_BattleOrders.png" />
@@ -498,6 +505,8 @@
     <EmbeddedResource Include="Resources\Options\MonsterStats\MS_Assets.zip" />
     <EmbeddedResource Include="Resources\CASC\item-runes.json" />
     <EmbeddedResource Include="Resources\Options\PersonalizedTabs\bankexpansionlayouthd.json" />
+    <EmbeddedResource Include="Resources\StashSearch.lowend.sprite" />
+    <EmbeddedResource Include="Resources\StashSearch.sprite" />
     <Resource Include="Resources\Icons\Icon_Beacon.png" />
     <Resource Include="Resources\Icons\Icon_Events.png" />
     <Resource Include="Resources\Images\ChatGem1b.png" />
@@ -686,8 +695,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="HUDConfig_Template.json" />
     <None Update="D2RLAN.log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="HUDConfig_Template.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -65,6 +65,8 @@ public class UserSettings : INotifyPropertyChanged
     private bool _filterUpdates;
     private int _stringColoring;
     private bool _HUDDebug;
+    private bool _D2RDebugMode;
+    private bool _D2RDebugModeNoErrors;
     private bool _LANOffline;
     private bool _closeMinimized;
 
@@ -795,6 +797,34 @@ public class UserSettings : INotifyPropertyChanged
                 return;
             }
             _HUDDebug = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool D2RDebugMode
+    {
+        get => _D2RDebugMode;
+        set
+        {
+            if (value == _D2RDebugMode)
+            {
+                return;
+            }
+            _D2RDebugMode = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool D2RDebugModeNoErrors
+    {
+        get => _D2RDebugModeNoErrors;
+        set
+        {
+            if (value == _D2RDebugModeNoErrors)
+            {
+                return;
+            }
+            _D2RDebugModeNoErrors = value;
             OnPropertyChanged();
         }
     }

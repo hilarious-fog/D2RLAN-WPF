@@ -1,0 +1,170 @@
+<Window
+    x:Class="D2RLAN.Views.Dialogs.CreateMemoryEditView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cm="http://caliburnmicro.com"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:dialogs="clr-namespace:D2RLAN.ViewModels.Dialogs"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="New Memory Edit"
+    Width="560"
+    Height="720"
+    Background="#FF1A1A1A"
+    d:DataContext="{d:DesignInstance Type=dialogs:CreateMemoryEditViewModel,
+                                     IsDesignTimeCreatable=True}"
+    mc:Ignorable="d">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
+            <Label
+                Content="Create Memory Edit"
+                FontWeight="Bold"
+                Foreground="Goldenrod"
+                Style="{StaticResource LabelHeaderStyle}" />
+            <TextBlock
+                Margin="0,0,0,12"
+                Foreground="BurlyWood"
+                Text="Define a custom memory patch. It will be saved to your mod HUD config and appear in the Memory Edits panel."
+                TextWrapping="Wrap" />
+
+            <TextBlock Foreground="Goldenrod" Text="Name *" />
+            <TextBox
+                Margin="0,0,0,8"
+                Background="#FF313030"
+                Foreground="White"
+                Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Foreground="Goldenrod" Text="Description" />
+            <TextBox
+                MinHeight="48"
+                Margin="0,0,0,8"
+                AcceptsReturn="True"
+                Background="#FF313030"
+                Foreground="White"
+                Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                TextWrapping="Wrap" />
+
+            <TextBlock Foreground="Goldenrod" Text="Category" />
+            <ComboBox
+                Margin="0,0,0,8"
+                ItemsSource="{Binding Categories}"
+                SelectedItem="{Binding Category}"
+                Style="{StaticResource ComboBoxStyle}" />
+
+            <CheckBox
+                Margin="0,0,0,8"
+                Content="Use multiple addresses"
+                Foreground="BurlyWood"
+                IsChecked="{Binding UseMultipleAddresses, Mode=TwoWay}" />
+
+            <StackPanel>
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding UseMultipleAddresses}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Foreground="Goldenrod" Text="Addresses * (one per line, comma, or semicolon separated)" />
+                <TextBox
+                    MinHeight="72"
+                    Margin="0,0,0,8"
+                    AcceptsReturn="True"
+                    Background="#FF313030"
+                    Foreground="White"
+                    Text="{Binding AddressesText, UpdateSourceTrigger=PropertyChanged}"
+                    ToolTip="Example: BB5346&#x0a;345FE9&#x0a;31CC7A" />
+            </StackPanel>
+
+            <StackPanel>
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding UseMultipleAddresses}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Foreground="Goldenrod" Text="Address * (hex, without 0x)" />
+                <TextBox
+                    Margin="0,0,0,8"
+                    Background="#FF313030"
+                    Foreground="White"
+                    Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}"
+                    ToolTip="Example: 749AC" />
+            </StackPanel>
+
+            <UniformGrid Columns="2" Margin="0,0,0,8">
+                <StackPanel Margin="0,0,8,0">
+                    <TextBlock Foreground="Goldenrod" Text="Type *" />
+                    <ComboBox
+                        ItemsSource="{Binding Types}"
+                        SelectedItem="{Binding Type}"
+                        Style="{StaticResource ComboBoxStyle}" />
+                </StackPanel>
+                <StackPanel Margin="8,0,0,0">
+                    <TextBlock Foreground="Goldenrod" Text="User Type *" />
+                    <ComboBox
+                        ItemsSource="{Binding UserTypes}"
+                        SelectedItem="{Binding UserType}"
+                        Style="{StaticResource ComboBoxStyle}" />
+                </StackPanel>
+            </UniformGrid>
+
+            <TextBlock Foreground="Goldenrod" Text="Length (bytes) *" />
+            <TextBox
+                Margin="0,0,0,8"
+                Background="#FF313030"
+                Foreground="White"
+                Text="{Binding Length, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Foreground="Goldenrod" Text="Current Value *" />
+            <TextBox
+                Margin="0,0,0,8"
+                Background="#FF313030"
+                Foreground="White"
+                Text="{Binding Values, UpdateSourceTrigger=PropertyChanged}" />
+
+            <UniformGrid Columns="2" Margin="0,0,0,8">
+                <StackPanel Margin="0,0,8,0">
+                    <TextBlock Foreground="Goldenrod" Text="Original Value *" />
+                    <TextBox
+                        Background="#FF313030"
+                        Foreground="White"
+                        Text="{Binding OriginalValues, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel Margin="8,0,0,0">
+                    <TextBlock Foreground="Goldenrod" Text="Modded Value *" />
+                    <TextBox
+                        Background="#FF313030"
+                        Foreground="White"
+                        Text="{Binding ModdedValues, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </UniformGrid>
+
+            <TextBlock
+                MinHeight="20"
+                Margin="0,0,0,12"
+                Foreground="OrangeRed"
+                Text="{Binding ValidationMessage}"
+                TextWrapping="Wrap" />
+
+            <UniformGrid Columns="2">
+                <Button
+                    cm:Message.Attach="[Event Click] = [Action OnSave];"
+                    Background="MidnightBlue"
+                    Content="Save"
+                    Style="{StaticResource ButtonStyle}" />
+                <Button
+                    cm:Message.Attach="[Event Click] = [Action OnCancel];"
+                    Background="#FF313030"
+                    Content="Cancel"
+                    Style="{StaticResource ButtonStyle}" />
+            </UniformGrid>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

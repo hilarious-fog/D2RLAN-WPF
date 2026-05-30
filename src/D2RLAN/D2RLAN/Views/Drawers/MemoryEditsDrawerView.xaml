@@ -1,0 +1,490 @@
+<UserControl
+    x:Class="D2RLAN.Views.Drawers.MemoryEditsDrawerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:cm="http://caliburnmicro.com"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:drawers="clr-namespace:D2RLAN.ViewModels.Drawers"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Padding="5"
+    d:DataContext="{d:DesignInstance Type=drawers:MemoryEditsDrawerViewModel,
+                                     IsDesignTimeCreatable=True}"
+    d:DesignWidth="675"
+    mc:Ignorable="d">
+    <UserControl.Resources>
+        <DataTemplate x:Key="AddressTypeDisplayTemplate">
+            <StackPanel>
+                <TextBlock Foreground="Gray" Text="Address / Type" />
+                <StackPanel Orientation="Horizontal">
+                    <Border
+                        Background="Transparent"
+                        Cursor="Help"
+                        ToolTipService.InitialShowDelay="200"
+                        ToolTipService.ShowDuration="60000">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleAddresses}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Border.ToolTip>
+                            <ToolTip
+                                Background="#FF2D2D2D"
+                                BorderBrush="Goldenrod"
+                                Foreground="White"
+                                MaxWidth="420">
+                                <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                                    <TextBlock
+                                        FontFamily="Consolas"
+                                        FontSize="12"
+                                        Text="{Binding PlacementTarget.DataContext.AddressSummaryToolTip, RelativeSource={RelativeSource AncestorType=ToolTip}}"
+                                        TextWrapping="Wrap" />
+                                </ScrollViewer>
+                            </ToolTip>
+                        </Border.ToolTip>
+                        <TextBlock
+                            Foreground="CornflowerBlue"
+                            Text="{Binding AddressSummary}"
+                            TextDecorations="Underline" />
+                    </Border>
+                    <TextBlock Foreground="BurlyWood" Text="{Binding AddressSummary}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleAddresses}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Foreground="BurlyWood">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat=" ({0}, {1} bytes)">
+                                <Binding Path="Type" />
+                                <Binding Path="Length" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="MemoryEditItemTemplate" DataType="{x:Type drawers:MemoryEditItemViewModel}">
+            <Border
+                Margin="0,0,0,8"
+                Padding="10"
+                BorderBrush="CornflowerBlue"
+                BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock
+                                FontWeight="Bold"
+                                Foreground="White"
+                                Text="{Binding Name}"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                Foreground="BurlyWood"
+                                Text="{Binding Description}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Column="1"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Top"
+                            Orientation="Horizontal">
+                            <Border
+                                Padding="6,2"
+                                Background="#FF313030"
+                                BorderThickness="1">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="#0d2905" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAdjustable}" Value="True">
+                                                <Setter Property="BorderBrush" Value="CornflowerBlue" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock FontSize="11" FontWeight="Bold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="LightGreen" />
+                                            <Setter Property="Text" Value="Boolean" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAdjustable}" Value="True">
+                                                    <Setter Property="Foreground" Value="CornflowerBlue" />
+                                                    <Setter Property="Text" Value="Adjustable" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                            <Border
+                                Margin="6,0,0,0"
+                                Padding="6,2"
+                                Background="#FF313030"
+                                BorderBrush="Goldenrod"
+                                BorderThickness="1"
+                                Visibility="{Binding IsModOverridden, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock
+                                    FontSize="11"
+                                    FontWeight="Bold"
+                                    Foreground="Goldenrod"
+                                    Text="Mod Override" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel
+                        Grid.Row="1"
+                        Margin="0,0,0,8"
+                        Orientation="Horizontal"
+                        Visibility="{Binding IsBoolean, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <CheckBox
+                            VerticalAlignment="Center"
+                            Content="Enabled"
+                            Foreground="BurlyWood"
+                            IsChecked="{Binding IsModdedEnabled, Mode=TwoWay}"
+                            IsEnabled="{Binding IsEditable}"
+                            ToolTip="Toggle between the original (disabled) and modded (enabled) value" />
+                        <TextBlock
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="Gray"
+                            Text="Uses modded value when enabled, original when disabled." />
+                    </StackPanel>
+
+                    <Grid
+                        Grid.Row="2"
+                        Margin="0,0,0,0"
+                        Visibility="{Binding IsAdjustable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Foreground="Goldenrod" Text="Value" />
+                            <TextBox
+                                Background="#FF313030"
+                                Foreground="White"
+                                IsReadOnly="{Binding IsReadOnly}"
+                                Text="{Binding Values, UpdateSourceTrigger=PropertyChanged}"
+                                ToolTip="Enter any valid value for this memory edit" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                            <TextBlock Foreground="Gray" Text="Original" />
+                            <TextBlock Foreground="BurlyWood" Text="{Binding OriginalValues}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                            <TextBlock Foreground="Gray" Text="Modded Default" />
+                            <TextBlock Foreground="BurlyWood" Text="{Binding ModdedValues}" />
+                        </StackPanel>
+                        <ContentControl
+                            Grid.Column="3"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource AddressTypeDisplayTemplate}" />
+                    </Grid>
+
+                    <Grid
+                        Grid.Row="2"
+                        Visibility="{Binding IsBoolean, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Foreground="Gray" Text="Active Value" />
+                            <TextBlock
+                                FontWeight="Bold"
+                                Foreground="BurlyWood"
+                                Text="{Binding Values}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                            <TextBlock Foreground="Gray" Text="Original (Disabled)" />
+                            <TextBlock Foreground="BurlyWood" Text="{Binding OriginalValues}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="0,0,8,0">
+                            <TextBlock Foreground="Gray" Text="Modded (Enabled)" />
+                            <TextBlock Foreground="BurlyWood" Text="{Binding ModdedValues}" />
+                        </StackPanel>
+                        <ContentControl
+                            Grid.Column="3"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource AddressTypeDisplayTemplate}" />
+                    </Grid>
+
+                    <Button
+                        Grid.Row="3"
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Left"
+                        Background="#FF313030"
+                        BorderBrush="Goldenrod"
+                        Click="AddToModOverridesButton_Click"
+                        Content="Add to Mod Overrides"
+                        Foreground="Goldenrod"
+                        Style="{StaticResource ButtonStyle}"
+                        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                    <TextBlock
+                        Grid.Row="4"
+                        Margin="0,4,0,0"
+                        Foreground="OrangeRed"
+                        Text="Custom value (differs from original and modded defaults)"
+                        Visibility="{Binding IsCustomValue, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" Orientation="Vertical">
+            <Label
+                Content="Memory Edits"
+                FontWeight="Bold"
+                Foreground="Goldenrod"
+                Style="{StaticResource LabelHeaderStyle}" />
+            <TextBlock
+                Margin="0,0,0,10"
+                Foreground="BurlyWood"
+                Style="{StaticResource TextBlockStyleGold}"
+                Text="Configure runtime memory patches applied when launching the game. Boolean edits toggle between original and modded values. Adjustable edits allow custom values."
+                TextAlignment="Center"
+                TextWrapping="Wrap" />
+
+            <StackPanel Margin="0,0,0,10">
+                <TextBlock
+                    Foreground="BurlyWood"
+                    Text="{Binding StatusMessage}"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOverrideTabSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock
+                    Foreground="BurlyWood"
+                    Text="{Binding OverrideStatusMessage}"
+                    TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOverrideTabSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Foreground="Gray" Text="{Binding LoadedEditCount, StringFormat=Displayed edits: {0}}" />
+            </StackPanel>
+
+            <TabControl
+                Margin="0,0,0,6"
+                Background="#FF1A1A1A"
+                BorderBrush="Goldenrod"
+                Foreground="BurlyWood"
+                SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+                <TabItem Header="Applied Memory Edits" />
+                <TabItem Header="Mod Overrides" />
+            </TabControl>
+
+            <TextBlock
+                Margin="0,0,0,10"
+                Foreground="Gray"
+                Text="Edits saved to your HUD config and applied at launch. Use Add to Mod Overrides button to apply it as a mod-specific entry — it will then be locked here. Entries marked Mod Override are controlled by the mod author."
+                TextWrapping="Wrap">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOverrideTabSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock
+                Margin="0,0,0,10"
+                Foreground="Gray"
+                Text="Memory edits applied by the mod author. Use New Memory Edit to add entries here first — they override matching applied edits at launch. These entries are not editable by the player."
+                TextWrapping="Wrap">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOverrideTabSelected}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <CheckBox
+                Margin="0,0,0,10"
+                Content="Show debug status"
+                Foreground="BurlyWood"
+                IsChecked="{Binding ShowDebugStatus, Mode=TwoWay}" />
+
+            <Border
+                Margin="0,0,0,10"
+                Padding="8"
+                Background="#22000000"
+                BorderBrush="OrangeRed"
+                BorderThickness="1"
+                Visibility="{Binding ShowDebugStatus, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock
+                        FontWeight="Bold"
+                        Foreground="OrangeRed"
+                        Text="Debug Status" />
+                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                        <TextBlock
+                            FontFamily="Consolas"
+                            FontSize="11"
+                            Foreground="LightGray"
+                            Text="{Binding DebugStatus, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <UniformGrid Columns="3" Margin="0,0,0,6">
+                <Button
+                    cm:Message.Attach="[Event Click] = [Action OnSave];"
+                    Background="MidnightBlue"
+                    Content="Save"
+                    IsEnabled="{Binding IsAppliedTabSelected}"
+                    Style="{StaticResource ButtonStyle}" />
+                <Button
+                    cm:Message.Attach="[Event Click] = [Action OnCreateNew];"
+                    Background="#0d2905"
+                    Content="New Memory Edit"
+                    IsEnabled="{Binding IsOverrideTabSelected}"
+                    Style="{StaticResource ButtonStyle}" />
+                <Button
+                    cm:Message.Attach="[Event Click] = [Action OnReload];"
+                    Background="#FF313030"
+                    Content="Reload"
+                    Style="{StaticResource ButtonStyle}" />
+            </UniformGrid>
+
+            <Button
+                cm:Message.Attach="[Event Click] = [Action OnRebuildHudConfig];"
+                Margin="0,0,0,10"
+                Background="#FF460202"
+                Content="Rebuild HUDConfig"
+                Style="{StaticResource ButtonStyle}" />
+
+            <ItemsControl ItemsSource="{Binding CurrentCategoryGroups}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type drawers:MemoryEditCategoryGroupViewModel}">
+                        <Expander
+                            Margin="0,0,0,8"
+                            Background="#FF1A1A1A"
+                            BorderBrush="Goldenrod"
+                            BorderThickness="1"
+                            Foreground="BurlyWood"
+                            IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        FontSize="14"
+                                        FontWeight="Bold"
+                                        Foreground="Goldenrod"
+                                        Text="{Binding Category}" />
+                                    <TextBlock
+                                        Margin="6,0,0,0"
+                                        Foreground="Gray"
+                                        Text="{Binding EditCount, StringFormat='({0})'}" />
+                                </StackPanel>
+                            </Expander.Header>
+                            <ItemsControl ItemsSource="{Binding ActivityGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type drawers:MemoryEditActivityGroupViewModel}">
+                                        <Expander
+                                            Margin="0,0,0,6"
+                                            Background="#FF252525"
+                                            BorderThickness="1"
+                                            Foreground="BurlyWood"
+                                            IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                                            <Expander.Style>
+                                                <Style TargetType="Expander">
+                                                    <Setter Property="BorderBrush" Value="#0d2905" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Activity}" Value="Inactive">
+                                                            <Setter Property="BorderBrush" Value="#FF313030" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Expander.Style>
+                                            <Expander.Header>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock FontWeight="Bold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="LightGreen" />
+                                                                <Setter Property="Text" Value="{Binding Activity}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Activity}" Value="Inactive">
+                                                                        <Setter Property="Foreground" Value="Gray" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock
+                                                        Margin="6,0,0,0"
+                                                        Foreground="Gray"
+                                                        Text="{Binding EditCount, StringFormat='({0})'}" />
+                                                </StackPanel>
+                                            </Expander.Header>
+                                            <ItemsControl
+                                                ItemTemplate="{StaticResource MemoryEditItemTemplate}"
+                                                ItemsSource="{Binding Items}" />
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

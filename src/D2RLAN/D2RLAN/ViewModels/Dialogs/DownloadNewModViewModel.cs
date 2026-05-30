@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -28,10 +28,12 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
 
     private ILog _logger = LogManager.GetLogger(typeof(DownloadNewModViewModel));
     private ObservableCollection<KeyValuePair<string, string>> _mods = new ObservableCollection<KeyValuePair<string, string>>();
+    private readonly Dictionary<string, string> _modInfoLinks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     private string _serviceAccountEmail;
     private string _privateKey; 
     private KeyValuePair<string, string> _selectedMod;
     private string _modDownloadLink;
+    private string _modInfoLink;
     private double _downloadProgress;
     private bool _progressBarIsIndeterminate;
     private string _progressStatus;
@@ -128,6 +130,16 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
             NotifyOfPropertyChange();
         }
     }
+    public string ModInfoLink
+    {
+        get => _modInfoLink;
+        set
+        {
+            if (value == _modInfoLink) return;
+            _modInfoLink = value;
+            NotifyOfPropertyChange();
+        }
+    }
     public KeyValuePair<string, string> SelectedMod
     {
         get => _selectedMod;
@@ -136,6 +148,7 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
             if (value.Equals(_selectedMod)) return;
             _selectedMod = value;
             NotifyOfPropertyChange();
+            UpdateModInfoLink();
         }
     }
     public ObservableCollection<KeyValuePair<string, string>> Mods
@@ -452,43 +465,63 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
 
                 // Define spreadsheetId and ranges
                 string spreadsheetId = "1ICm2wxCTrQrgRxPJshj1WPA10-slATymYLm7WYkmkis";
-                string columnDRange = "Sheet1!D10:D";
-                string columnGRange = "Sheet1!G10:G";
+                string columnModName = "Sheet1!B10:B";
+                string columnModLink = "Sheet1!E10:E";
+                string columnModInfoLink = "Sheet1!L10:L";
 
-                // Fetch values from Google Sheets for column D
+                // Fetch values from Google Sheets for column with mod names
                 SpreadsheetsResource.ValuesResource.GetRequest request =
-                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, columnDRange);
+                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, columnModName);
 
                 ValueRange response = await request.ExecuteAsync();
-                IList<IList<object>> dValues = response.Values;
+                IList<IList<object>> dValues = response.Values ?? Array.Empty<IList<object>>();
 
-                // Fetch values from Google Sheets for column G
+                // Fetch values from Google Sheets for column with download links
                 SpreadsheetsResource.ValuesResource.GetRequest request2 =
-                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, columnGRange);
+                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, columnModLink);
 
                 response = await request2.ExecuteAsync();
-                IList<IList<object>> gValues = response.Values;
+                IList<IList<object>> gValues = response.Values ?? Array.Empty<IList<object>>();
 
-                if (dValues.Count != gValues.Count)
+                // Fetch values from Google Sheets for column with mod info/wiki links
+                SpreadsheetsResource.ValuesResource.GetRequest request3 =
+                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, columnModInfoLink);
+
+                response = await request3.ExecuteAsync();
+                IList<IList<object>> lValues = response.Values ?? Array.Empty<IList<object>>();
+
+                if (dValues.Count != gValues.Count || dValues.Count != lValues.Count)
                 {
                     System.Windows.MessageBox.Show(
-                        "The number of items in column D does not match the number of items in column G.\nPlease notify an admin.",
+                        "The number of items in the mod name, download link, and mod info link columns do not match.\nPlease notify an admin.",
                         "Column Mismatch!", MessageBoxButton.OK, MessageBoxImage.Error);
-                    _logger.Error("The number of items in column D does not match the number of items in column G.");
+                    _logger.Error("The number of items in the mod name, download link, and mod info link columns do not match.");
                     return;
                 }
 
                 Mods.Clear();
+                _modInfoLinks.Clear();
                 for (int i = 0; i < dValues.Count; i++)
                 {
-                    Mods.Add(new KeyValuePair<string, string>(
-                        dValues[i][0].ToString(),
-                        gValues[i][0].ToString()));
+                    var modName = dValues[i].Count > 0 ? dValues[i][0].ToString() : string.Empty;
+                    var modLink = gValues[i].Count > 0 ? gValues[i][0].ToString() : string.Empty;
+                    var modInfo = lValues.Count > i && lValues[i].Count > 0 ? lValues[i][0].ToString() : string.Empty;
+
+                    if (string.IsNullOrWhiteSpace(modName))
+                        continue;
+
+                    Mods.Add(new KeyValuePair<string, string>(modName, modLink));
+
+                    if (!string.IsNullOrWhiteSpace(modInfo))
+                        _modInfoLinks[modName] = modInfo;
                 }
 
                 // Automatically assign first entry to SelectedMod
                 if (Mods.Count > 0)
+                {
                     SelectedMod = Mods[0];
+                    UpdateModInfoLink();
+                }
             }
             catch (Exception ex)
             {
@@ -861,7 +894,45 @@ public class DownloadNewModViewModel : Caliburn.Micro.Screen
             if (SelectedMod.Key != "TCP Files (Install First)")
                 ModDownloadLink = SelectedMod.Value;
         }
-            
+        UpdateModInfoLink();
+    }
+
+    private void UpdateModInfoLink()
+    {
+        if (SelectedMod.Key == "TCP Files (Install First)" || string.IsNullOrWhiteSpace(SelectedMod.Key))
+        {
+            ModInfoLink = string.Empty;
+            return;
+        }
+
+        if (_modInfoLinks.TryGetValue(SelectedMod.Key, out var infoLink))
+            ModInfoLink = infoLink;
+        else
+            ModInfoLink = string.Empty;
+    }
+
+    [UsedImplicitly]
+    public void OnOpenModInfo()
+    {
+        const string noInfoText = "No Info Provided (Yet)";
+
+        if (string.IsNullOrWhiteSpace(ModInfoLink) ||
+            string.Equals(ModInfoLink, noInfoText, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = ModInfoLink,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to open mod info link.\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            _logger.Error(ex);
+        }
     }
 
     #endregion

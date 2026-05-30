@@ -252,6 +252,24 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                         ShellViewModel.ExpandedMercEnabled = false;
                         ShellViewModel.ColorDyesEnabled = false;
                     }
+                    else if (ShellViewModel.ModInfo.Name == "Shattered")
+                    {
+                        UiThemeEnabled = true;
+                        ShellViewModel.WikiEnabled = true;
+                        ShellViewModel.ShowItemLevelsEnabled = true;
+                        ShellViewModel.UserSettings.SuperTelekinesis = 1;
+                        ShellViewModel.SuperTelekinesisEnabled = true;
+                        ShellViewModel.SkillBuffIconsEnabled = false;
+                        ShellViewModel.UserSettings.SkillIcons = 1;
+                        ShellViewModel.SkillIconPackEnabled = true;
+                        ShellViewModel.ItemIconDisplayEnabled = true;
+                        //ShellViewModel.UserSettings.ItemIlvls = 1;
+                        ShellViewModel.ExpandedInventoryEnabled = false;
+                        ShellViewModel.ExpandedStashEnabled = false;
+                        ShellViewModel.ExpandedCubeEnabled = false;
+                        ShellViewModel.ExpandedMercEnabled = false;
+                        ShellViewModel.ColorDyesEnabled = true;
+                    }
                     else
                     {
                         UiThemeEnabled = false;
@@ -694,10 +712,18 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
 
             // Copy override rules if available
             string overrideRules = Path.Combine(Path.Combine(ShellViewModel.SelectedModDataFolder, "D2RLAN", "Filters"), "override_rules.lua");
+            string overrideRulesBase = Path.Combine(Path.Combine(ShellViewModel.SelectedModDataFolder, "D2RLAN", "Filters"), "override_rules.lua");
             if (File.Exists(overrideRules))
             {
                 File.Copy(overrideRules, $@"{ShellViewModel.GamePath}override_rules.lua", overwrite: true);
                 _logger.Info("Override rules copied.");
+            }
+            else
+            {
+                if (File.Exists("../D2R/override_rules.lua"))
+                    File.Delete("../D2R/override_rules.lua");
+
+                _logger.Info("Override rules removed.");
             }
 
 
@@ -714,6 +740,7 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                 await ApplyHdrFix();
                 await ApplyCinematicSkip();
                 _logger.Info("Applying mod settings...");
+                await ShellViewModel.SaveUserSettings();
                 await ShellViewModel.ApplyModSettings();
                 _logger.Info("Generating D2R launch arguments...");
                 GetD2RArgs();
@@ -727,7 +754,8 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                 return;
             }
 
-            string targetFontPath = Path.Combine(ShellViewModel.SelectedModDataFolder, "hd/ui/fonts/exocetblizzardot-medium.otf");
+            string fontsFolder = Path.Combine(ShellViewModel.SelectedModDataFolder, "hd", "ui", "fonts");
+            string targetFontPath = Path.Combine(fontsFolder, "exocetblizzardot-medium.otf");
 
             // --- Install Exocet font ---
             if (!File.Exists(targetFontPath))
@@ -740,6 +768,12 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                         _logger.Info("Installing Exocet.otf font into game folder...");
                         byte[] font = await Helper.GetResourceByteArray("Fonts.0.otf");
                         await File.WriteAllBytesAsync(fontPath, font);
+                    }
+
+                    if (!Directory.Exists(fontsFolder))
+                    {
+                        Directory.CreateDirectory(fontsFolder);
+                        _logger.Info($"Created missing mod fonts folder: {fontsFolder}");
                     }
 
                     byte[] fontBytes = ShellViewModel.UserSettings.TextLanguage == 6 ? await Helper.GetResourceByteArray("Fonts.retail.otf") : await Helper.GetResourceByteArray("Fonts.0.otf");
@@ -1504,6 +1538,31 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
     {
         MessageBox.Show("Use this feature if you meet these conditions:\n- Using either of the 'Advanced' Monster Stats Display Options\n- Using MSI Afterburner (Riva Tuner) for in-game overlays\n\nThis will restart the apps to avoid loading conflicts; requires:\n- D2RLAN must be ran as Administrator\n- Change MSI Settings to 'Start App Minimized' (for QoL purposes)");
     }
+
+    [UsedImplicitly]
+    public async void OnD2RDebugModeHelp()
+    {
+        MessageBox.Show(
+            "D2R Debug Mode launches the debug build of Diablo II: Resurrected instead of the retail executable.\n\n" +
+            "When enabled:\n" +
+            "- All D2RHUD operations are disabled (no HUD injection, no memory edits)\n" +
+            "- You may see many error pop-ups while playing, including both relevant and irrelevant messages\n\n" +
+            "This mode is intended for debugging and development. Most D2RLAN enhancements will not apply.");
+    }
+
+    [UsedImplicitly]
+    public async void OnD2RDebugModeNoErrorsHelp()
+    {
+        MessageBox.Show(
+            "D2R Debug Mode (No Errors) builds D2R_Debug_NoErrors.exe from D2R_Debug.exe " +
+            "(unpatched source is never modified) using the same fc /b file offsets as Installer2.\n\n" +
+            "When enabled:\n" +
+            "- Launches D2R_Debug_NoErrors.exe\n" +
+            "- D2RHUD injection and HUD config memory edits are skipped\n\n" +
+            "Check D2RLAN.log for copy/patch OK lines. To isolate addresses, set IsEnabled = false " +
+            "in D2RDebugNoErrorsMemoryPatches.cs and rebuild D2RLAN.");
+    }
+
     public async void OnVerifyData()
     {
         if (ShellViewModel.UserSettings == null)
@@ -1598,9 +1657,27 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
 
         foreach (var process in processes)
         {
-            if (process.ProcessName == ("D2R"))
+            string d2rProcessName = ShellViewModel.UserSettings.D2RDebugModeNoErrors
+                ? D2RDebugNoErrorsPatcher.GetDebugProcessName(noErrorsMode: true)
+                : ShellViewModel.UsesD2RDebugExecutable(ShellViewModel.UserSettings)
+                    ? "D2R_Debug"
+                    : "D2R";
+            if (process.ProcessName == d2rProcessName)
             {
                 _logger.Info($"FORCE HUD: Found D2R process with PID: {process.Id}");
+
+                if (ShellViewModel.UserSettings.D2RDebugModeNoErrors)
+                {
+                    _logger.Info(
+                        "Skipping HUD loader — D2R Debug Mode (No Errors) uses a pre-patched executable.");
+                    return;
+                }
+
+                if (ShellViewModel.UserSettings.D2RDebugMode)
+                {
+                    _logger.Info("Skipping HUD loader and memory edits — D2R Debug Mode.");
+                    return;
+                }
 
                 var config = LoadConfig("../D2R/HUDConfig_" + ShellViewModel.ModInfo.Name + ".json");
 
@@ -1610,11 +1687,10 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                     return;
                 }
 
-
                 ProcessStartInfo memProcess = new ProcessStartInfo()
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/C D2RHUD-Loader.exe D2R.exe",
+                    Arguments = "/C D2RHUD-Loader.exe D2R.exe",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -2085,6 +2161,86 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
         else
             File.Copy("D2RHUD_RELEASE.dll", "D2RHUD.DLL", true);
     }
+
+    public async void OnD2RDebugMode()
+    {
+        if (ShellViewModel.UserSettings.D2RDebugMode != true)
+            return;
+
+        await EnsureD2RDebugExecutableAsync();
+    }
+
+    [UsedImplicitly]
+    public async void OnD2RDebugModeNoErrors()
+    {
+        if (ShellViewModel.UserSettings.D2RDebugModeNoErrors != true)
+            return;
+
+        await ShellViewModel.SaveUserSettings();
+        await EnsureD2RDebugExecutableAsync();
+
+        string sourcePath = Path.Combine(ShellViewModel.GamePath, D2RDebugNoErrorsPatcher.SourceDebugExeFileName);
+        if (!File.Exists(sourcePath))
+        {
+            MessageBox.Show(
+                $"{D2RDebugNoErrorsPatcher.SourceDebugExeFileName} is required but was not found in:{Environment.NewLine}" +
+                $"{ShellViewModel.GamePath}",
+                "D2R Debug Mode (No Errors)",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        await BuildNoErrorsDebugExecutableAsync();
+    }
+
+    private async Task EnsureD2RDebugExecutableAsync()
+    {
+        string debugExePath = Path.Combine(
+            ShellViewModel.GamePath,
+            D2RDebugNoErrorsPatcher.SourceDebugExeFileName);
+
+        if (File.Exists(debugExePath))
+            return;
+
+        const string debugLink =
+            "https://www.dropbox.com/scl/fi/dp4ab2ct3yaixvy2ees5j/D2R_Debug.exe?rlkey=q2vo2nlhsuy3psyai42m2j2c4&st=bx166i32&dl=1";
+
+        string installerPath = Path.Combine(ShellViewModel.GamePath, "D2R_Installer.exe");
+        if (File.Exists(installerPath))
+            File.Delete(installerPath);
+
+        using WebClient webClient = new();
+
+        try
+        {
+            await webClient.DownloadFileTaskAsync(debugLink, debugExePath);
+            FileUnblockHelper.TryUnblock(debugExePath);
+            _logger.Info($"Downloaded {D2RDebugNoErrorsPatcher.SourceDebugExeFileName} to {debugExePath}");
+        }
+        catch (WebException ex)
+        {
+            _logger.Error(ex.Message);
+            _logger.Error($"Failed to download {D2RDebugNoErrorsPatcher.SourceDebugExeFileName}.");
+            return;
+        }
+
+        if (ShellViewModel.UserSettings.D2RDebugModeNoErrors)
+            await BuildNoErrorsDebugExecutableAsync();
+    }
+
+    private async Task BuildNoErrorsDebugExecutableAsync()
+    {
+        await Task.Yield();
+        D2RDebugNoErrorsPatcher.EnsureResult ensureResult =
+            D2RDebugNoErrorsPatcher.EnsureNoErrorsExecutable(ShellViewModel.GamePath);
+
+        if (ensureResult.Success)
+            _logger.Info($"Prepared {D2RDebugNoErrorsPatcher.NoErrorsDebugExeFileName} at {ensureResult.LaunchExePath}");
+        else
+            _logger.Warn(ensureResult.ErrorMessage ?? "Failed to prepare D2R_Debug_NoErrors.exe.");
+    }
+
     public async void OnForceLANOffline()
     {
         

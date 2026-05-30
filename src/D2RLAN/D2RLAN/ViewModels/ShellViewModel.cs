@@ -51,7 +51,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     private UserControl _userControl;
     private IWindowManager _windowManager;
     private string _title = "D2RLAN";
-    private string appVersion = "2.0.0";
+    private string appVersion = "2.0.7";
     private string _gamePath;
     private bool _diabloInstallDetected;
     private bool _customizationsEnabled;
@@ -75,8 +75,6 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     private bool _ExpandedMercEnabled = true;
     private readonly IConfigurationRoot _configuration;
     
-
-
     const int PROCESS_VM_READ = 0x0010;
     const int PROCESS_VM_WRITE = 0x0020;
     const int PROCESS_VM_OPERATION = 0x0008;
@@ -133,6 +131,16 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
     [DllImport("kernel32.dll")]
     public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool VirtualProtectEx(
+        IntPtr hProcess,
+        IntPtr lpAddress,
+        UIntPtr dwSize,
+        uint flNewProtect,
+        out uint lpflOldProtect);
+
+    private const uint PageExecuteReadwrite = 0x40;
     #endregion
 
     #region ---Window/Loaded Handlers---
@@ -194,6 +202,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             }
         }
 
+        await CheckStashSearchFiles();
 
         await ApplyTCPPatch();
     } //Apply User-Defined QoL Options
@@ -221,6 +230,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             await Task.Run(CheckForLauncherUpdates);
 
         vm.OnForceHUDDebug();
+        vm.OnD2RDebugMode();
+        vm.OnD2RDebugModeNoErrors();
 
         // Event Checker
         string eventPath = Path.Combine(GamePath, "Mods", ModInfo.Name, ModInfo.Name + ".mpq", "data_noevent");
@@ -297,6 +308,12 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                 {
                     CustomizationsDrawerViewModel vm = new CustomizationsDrawerViewModel(this);
                     UserControl = new CustomizationsDrawerView() { DataContext = vm };
+                    break;
+                }
+            case "MEMORY EDITS":
+                {
+                    MemoryEditsDrawerViewModel vm = new MemoryEditsDrawerViewModel(this);
+                    UserControl = new MemoryEditsDrawerView() { DataContext = vm };
                     break;
                 }
             /*
@@ -1283,8 +1300,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         string hudMonsterHealthHdDisabledJsonFilePath = Path.Combine(uiLayoutsPath, "hudmonsterhealthhd_disabled.json");
         string monsterStatsPath = Path.Combine(SelectedModDataFolder, "D2RLAN/Monster Stats");
         string outputPath = SelectedModDataFolder + "/D2RLAN/Monster Stats/MS_Assets.zip";
-        string freshConfigFilePath = "HUDConfig_Template.json";
-        string ConfigFilePath = "../D2R/HUDConfig_" + ModInfo.Name + ".json";
+        string freshConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HUDConfig_Template.json");
+        string ConfigFilePath = Path.Combine(GamePath, $"HUDConfig_{ModInfo.Name}.json");
       
         if (File.Exists(freshConfigFilePath))
         {
@@ -4511,7 +4528,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
     public async Task ApplyTCPPatch()
     {
-        string configPath = "../D2R/HUDConfig_" + ModInfo.Name + ".json";
+        string configPath = Path.Combine(GamePath, $"HUDConfig_{ModInfo.Name}.json");
         var config = LoadConfig(configPath);
 
         if (config == null)
@@ -4521,88 +4538,19 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         }
 
         // --- Load override config ---
-        string overridePath = $"../D2R/Mods/{ModInfo.Name}/{ModInfo.Name}.mpq/data/D2RLAN/memory_overrides.json";
+        string overridePath = Path.Combine(
+            GamePath,
+            "Mods",
+            ModInfo.Name,
+            $"{ModInfo.Name}.mpq",
+            "data",
+            "D2RLAN",
+            "memory_overrides.json");
         if (File.Exists(overridePath))
         {
             try
             {
-                var rootJson = StripJsonComments(File.ReadAllText(configPath));
-                var overrideJson = StripJsonComments(File.ReadAllText(overridePath));
-
-                var root = JsonNode.Parse(rootJson)!.AsObject();
-                var overrides = JsonNode.Parse(overrideJson)!.AsObject();
-
-                // ---------------- MemoryConfigs merge ----------------
-                if (root["MemoryConfigs"] is not JsonArray mainMem)
-                    throw new Exception("Main config has no MemoryConfigs section");
-
-                if (overrides["MemoryConfigs"] is JsonArray overrideMem)
-                {
-                    foreach (var overrideNode in overrideMem.OfType<JsonObject>())
-                    {
-                        var existing = mainMem
-                            .OfType<JsonObject>()
-                            .FirstOrDefault(m => SameTarget(m, overrideNode));
-
-                        if (existing == null)
-                        {
-                            mainMem.Add(overrideNode.DeepClone());
-                            _logger.Info($"Added memory entry: {overrideNode["Name"]}");
-                            continue;
-                        }
-
-                        if (!JsonNode.DeepEquals(existing, overrideNode))
-                        {
-                            int index = mainMem.IndexOf(existing);
-                            mainMem[index] = overrideNode.DeepClone();
-                            _logger.Info($"Updated memory entry: {overrideNode["Name"]}");
-                        }
-                        else
-                        {
-                            _logger.Info($"Memory entry unchanged: {overrideNode["Name"]}");
-                        }
-                    }
-                }
-                else
-                {
-                    _logger.Info("Override file has no MemoryConfigs section");
-                }
-
-                // ---------------- Top-level override merge ----------------
-                foreach (var kvp in overrides)
-                {
-                    string key = kvp.Key;
-
-                    // Skip MemoryConfigs (already handled)
-                    if (key.Equals("MemoryConfigs", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    JsonNode? overrideValue = kvp.Value;
-                    JsonNode? existingValue = root[key];
-
-                    if (existingValue == null)
-                    {
-                        root[key] = overrideValue?.DeepClone();
-                        _logger.Info($"Added config option: {key}");
-                    }
-                    else if (!JsonNode.DeepEquals(existingValue, overrideValue))
-                    {
-                        root[key] = overrideValue?.DeepClone();
-                        _logger.Info($"Updated config option: {key}");
-                    }
-                    else
-                    {
-                        _logger.Info($"Config option unchanged: {key}");
-                    }
-                }
-
-                // ---------------- Write result ----------------
-                File.WriteAllText(
-                    configPath,
-                    root.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-                );
-
-                _logger.Info("Overrides applied successfully without affecting unrelated sections");
+                ApplyMemoryOverridesToHudConfig(configPath, overridePath);
             }
             catch (Exception ex)
             {
@@ -4619,7 +4567,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         // Ensure HUD config contains all template memory entries before applying TCP patch
         try
         {
-            string hudTemplatePath = "HUDConfig_Template.json";
+            string hudTemplatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HUDConfig_Template.json");
             if (File.Exists(hudTemplatePath) && File.Exists(configPath))
             {
                 MergeHudTemplateMemoryConfigs(hudTemplatePath, configPath);
@@ -4630,13 +4578,21 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             _logger.Warn($"Failed to pre-merge HUD template into config before ApplyTCPPatch: {ex.Message}");
         }
 
-        string processName = "../D2R/d2r.exe";
+        bool useDebugExecutable = UsesD2RDebugExecutable(UserSettings);
+        bool noErrorsMode = UserSettings.D2RDebugModeNoErrors;
         string arguments = UserSettings.CurrentD2RArgs;
+
+        _logger.Info(
+            $"Launch flags: D2RDebugMode={UserSettings.D2RDebugMode}, " +
+            $"D2RDebugModeNoErrors={noErrorsMode}, GamePath={GamePath}");
 
         if (HomeDrawerViewModel.ImageRNG == 10)
             arguments += " -cheats";
         else if (ModInfo.Name == "RMD-MP")
             arguments = arguments.Replace(" -cheats", "");
+
+        if (useDebugExecutable && arguments.IndexOf("-cheats", StringComparison.OrdinalIgnoreCase) < 0)
+            arguments += " -cheats";
 
         List<string> MSIPath = null;
 
@@ -4649,24 +4605,84 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             await Task.Delay(1000);
         }
 
-        Process process = LaunchProcess(processName, arguments);
-        Thread.Sleep(1500);
-
-        ProcessStartInfo memProcess = new ProcessStartInfo()
+        string launchExePath;
+        if (noErrorsMode)
         {
-            FileName = "cmd.exe",
-            Arguments = $"/C D2RHUD-Loader.exe D2R.exe",
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        Process.Start(memProcess);
+            D2RDebugNoErrorsPatcher.EnsureResult ensureResult =
+                D2RDebugNoErrorsPatcher.EnsureNoErrorsExecutable(GamePath);
+
+            launchExePath = ensureResult.LaunchExePath;
+
+            if (ensureResult.PatchResult != null)
+            {
+                _logger.Info(
+                    $"Built {D2RDebugNoErrorsPatcher.NoErrorsDebugExeFileName} from " +
+                    $"{D2RDebugNoErrorsPatcher.SourceDebugExeFileName}");
+                foreach (string line in ensureResult.PatchResult.Details)
+                    _logger.Info($"No-errors exe patch: {line}");
+                _logger.Info(
+                    $"No-errors exe patch complete: {ensureResult.PatchResult.Succeeded}/" +
+                    $"{ensureResult.PatchResult.Total}");
+            }
+
+            if (!ensureResult.Success || !File.Exists(launchExePath))
+            {
+                string error = ensureResult.ErrorMessage
+                    ?? $"Failed to prepare {D2RDebugNoErrorsPatcher.NoErrorsDebugExeFileName}.";
+                _logger.Error(error);
+                MessageBox.Show(
+                    error + Environment.NewLine + Environment.NewLine +
+                    $"Expected file:{Environment.NewLine}{launchExePath}",
+                    "D2R Debug Mode (No Errors)",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+        }
+        else
+        {
+            string exeFileName = useDebugExecutable
+                ? D2RDebugNoErrorsPatcher.SourceDebugExeFileName
+                : "d2r.exe";
+            launchExePath = Path.Combine(GamePath, exeFileName);
+        }
+
+        _logger.Info($"Launching executable: {launchExePath}");
+        bool useShellExecuteForLaunch = useDebugExecutable;
+        Process process = LaunchProcess(launchExePath, arguments, GamePath, useShellExecuteForLaunch);
+
+        if (!useDebugExecutable)
+        {
+            Thread.Sleep(1500);
+
+            ProcessStartInfo memProcess = new ProcessStartInfo()
+            {
+                FileName = "cmd.exe",
+                Arguments = "/C D2RHUD-Loader.exe D2R.exe",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            Process.Start(memProcess);
+        }
 
         if (process != null)
         {
-            int skillIndex = await CheckSkillIndexAsync();
-            _logger.Info($"Memory Editing tasks begun, SkillIndex: {skillIndex}");
-            EditMemory(process.Id, config.MemoryConfigs, skillIndex);
+            if (noErrorsMode)
+            {
+                _logger.Info(
+                    $"D2R Debug Mode (No Errors): launched {launchExePath}");
+            }
+            else if (useDebugExecutable)
+            {
+                _logger.Info("Skipping HUD loader and memory edits — D2R Debug Mode.");
+            }
+            else
+            {
+                int skillIndex = await CheckSkillIndexAsync();
+                _logger.Info($"Memory Editing tasks begun, SkillIndex: {skillIndex}");
+                EditMemory(process.Id, config.MemoryConfigs, skillIndex);
+            }
 
             // Restore MSI if needed
             if (UserSettings.MSIFix && MSIPath != null)
@@ -4705,6 +4721,112 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                      .SequenceEqual(ba.Select(x => x!.ToString()));
 
         return false;
+    }
+
+    public static void ApplyMemoryOverridesToHudConfig(string configPath, string overridePath)
+    {
+        if (!File.Exists(configPath))
+            throw new FileNotFoundException("HUD config file not found.", configPath);
+
+        if (!File.Exists(overridePath))
+            return;
+
+        var rootJson = StripJsonComments(File.ReadAllText(configPath));
+        var overrideJson = StripJsonComments(File.ReadAllText(overridePath));
+
+        var root = JsonNode.Parse(rootJson)!.AsObject();
+        var overrides = JsonNode.Parse(overrideJson)!.AsObject();
+
+        if (root["MemoryConfigs"] is not JsonArray mainMem)
+            throw new Exception("Main config has no MemoryConfigs section");
+
+        if (overrides["MemoryConfigs"] is JsonArray overrideMem)
+        {
+            foreach (var overrideNode in overrideMem.OfType<JsonObject>())
+            {
+                var existing = mainMem
+                    .OfType<JsonObject>()
+                    .FirstOrDefault(m => SameTarget(m, overrideNode));
+
+                if (existing == null)
+                {
+                    mainMem.Add(overrideNode.DeepClone());
+                    _logger.Info($"Added memory entry: {overrideNode["Name"]}");
+                    continue;
+                }
+
+                if (!JsonNode.DeepEquals(existing, overrideNode))
+                {
+                    int index = mainMem.IndexOf(existing);
+                    mainMem[index] = overrideNode.DeepClone();
+                    _logger.Info($"Updated memory entry: {overrideNode["Name"]}");
+                }
+                else
+                {
+                    _logger.Info($"Memory entry unchanged: {overrideNode["Name"]}");
+                }
+            }
+        }
+        else
+        {
+            _logger.Info("Override file has no MemoryConfigs section");
+        }
+
+        foreach (var kvp in overrides)
+        {
+            string key = kvp.Key;
+
+            if (key.Equals("MemoryConfigs", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            JsonNode? overrideValue = kvp.Value;
+            JsonNode? existingValue = root[key];
+
+            if (existingValue == null)
+            {
+                root[key] = overrideValue?.DeepClone();
+                _logger.Info($"Added config option: {key}");
+            }
+            else if (!JsonNode.DeepEquals(existingValue, overrideValue))
+            {
+                root[key] = overrideValue?.DeepClone();
+                _logger.Info($"Updated config option: {key}");
+            }
+            else
+            {
+                _logger.Info($"Config option unchanged: {key}");
+            }
+        }
+
+        File.WriteAllText(
+            configPath,
+            root.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+        );
+
+        _logger.Info("Overrides applied successfully without affecting unrelated sections");
+    }
+
+    public static void RebuildHudConfigFromTemplate(string configPath, string templatePath, string overridePath)
+    {
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException("HUD config template not found.", templatePath);
+
+        string configDirectory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(configDirectory) && !Directory.Exists(configDirectory))
+            Directory.CreateDirectory(configDirectory);
+
+        if (File.Exists(configPath))
+            File.Delete(configPath);
+
+        string templateContent = File.ReadAllText(templatePath);
+        File.WriteAllText(configPath, templateContent);
+        _logger.Info($"Rebuilt HUD config from template: {configPath} (source: {templatePath})");
+
+        if (File.Exists(overridePath))
+        {
+            ApplyMemoryOverridesToHudConfig(configPath, overridePath);
+            _logger.Info($"Reapplied mod overrides from: {overridePath}");
+        }
     }
 
     public List<string> CloseMSIAfterburner(string processName) //Used to find path info and close MSI Afterburner
@@ -4785,7 +4907,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         return rowCount;
     }
 
-    static Process LaunchProcess(string processName, string arguments) //Start the game
+    static Process LaunchProcess(string processName, string arguments, string workingDirectory, bool useShellExecute = false) //Start the game
     {
         try
         {
@@ -4793,20 +4915,128 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             {
                 FileName = processName,
                 Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = !debugLogging
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = useShellExecute,
+                CreateNoWindow = !debugLogging && !useShellExecute
             };
 
+            _logger.Info($"Launching: {processName} {arguments} (cwd: {workingDirectory})");
+
             Process process = Process.Start(startInfo);
-            process.WaitForInputIdle(5000);
+            if (process == null)
+                return null;
+
+            if (!useShellExecute)
+            {
+                try
+                {
+                    process.WaitForInputIdle(5000);
+                }
+                catch (InvalidOperationException)
+                {
+                    if (process.HasExited)
+                    {
+                        _logger.Error($"Process exited immediately with code {process.ExitCode}.");
+                        return null;
+                    }
+                }
+            }
+
             return process;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error launching process: {ex.Message}");
+            _logger.Error($"Error launching process: {ex.Message}");
             return null;
         }
     }
+    public static bool UsesD2RDebugExecutable(UserSettings settings) =>
+        settings.D2RDebugMode || settings.D2RDebugModeNoErrors;
+
+    public static void ApplyD2RDebugNoErrorsPatchesToRunningProcess(int processId, ProcessModule mainModule = null)
+    {
+        int desiredAccess = PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION;
+        IntPtr hProcess = OpenProcess(desiredAccess, false, processId);
+
+        if (hProcess == IntPtr.Zero)
+        {
+            _logger.Error("Failed to open process for D2R Debug Mode (No Errors) runtime patches.");
+            return;
+        }
+
+        try
+        {
+            Process process = Process.GetProcessById(processId);
+            process.Refresh();
+
+            ProcessModule module = mainModule;
+            try
+            {
+                module ??= process.MainModule;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to resolve D2R main module: {ex.Message}");
+                return;
+            }
+
+            if (module == null || string.IsNullOrEmpty(module.FileName))
+            {
+                _logger.Error("D2R main module path unavailable — use launch with No Errors enabled, or restart.");
+                return;
+            }
+
+            IntPtr baseAddress = module.BaseAddress;
+            _logger.Info(
+                $"No-errors runtime patch: module={module.ModuleName}, file={module.FileName}, " +
+                $"base=0x{baseAddress.ToInt64():X}");
+
+            D2RDebugNoErrorsPatcher.PatchResult result = D2RDebugNoErrorsPatcher.ApplyToRunningProcess(
+                module.FileName,
+                baseAddress,
+                address => TryReadProcessByte(hProcess, address),
+                (address, value) => TryWriteProcessByte(hProcess, address, value));
+
+            foreach (string line in result.Details)
+                _logger.Info($"No-errors runtime: {line}");
+            _logger.Info($"No-errors runtime patch complete: {result.Succeeded}/{result.Total}.");
+        }
+        finally
+        {
+            CloseHandle(hProcess);
+        }
+    }
+
+    private static byte? TryReadProcessByte(IntPtr hProcess, IntPtr address)
+    {
+        byte[] buffer = new byte[1];
+        int bytesRead = 0;
+        if (!ReadProcessMemory(hProcess, address, buffer, 1, ref bytesRead) || bytesRead != 1)
+            return null;
+
+        return buffer[0];
+    }
+
+    private static bool TryWriteProcessByte(IntPtr hProcess, IntPtr address, byte value)
+    {
+        byte[] buffer = { value };
+
+        if (!VirtualProtectEx(hProcess, address, (UIntPtr)1, PageExecuteReadwrite, out _))
+            return false;
+
+        int bytesWritten = 0;
+        return WriteProcessMemory(hProcess, address, buffer, 1, ref bytesWritten) && bytesWritten == 1;
+    }
+
+    private static long ParseMemoryOffset(string address)
+    {
+        string normalized = address.Trim();
+        if (normalized.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[2..];
+
+        return Convert.ToInt64(normalized, 16);
+    }
+
     public static void EditMemory(int processId, List<MemoryConfig> memoryConfigs, int skillIndex)
     {
         int desiredAccess = PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION;
@@ -4917,8 +5147,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
     static bool ProcessAddress(IntPtr baseAddress, IntPtr hProcess, string address, int length, string type, string values)
     {
-        long offset = Convert.ToInt64(address, 16);
-        IntPtr effectiveAddress = IntPtr.Add(baseAddress, (int)offset);
+        long offset = ParseMemoryOffset(address);
+        IntPtr effectiveAddress = new IntPtr(baseAddress.ToInt64() + offset);
 
         if (debugLogging)
             Console.WriteLine($"Offset: 0x{offset:X}, Effective Address: 0x{effectiveAddress:X}");
@@ -4964,6 +5194,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         public List<string> Addresses { get; set; }
         public int Length { get; set; }
         public string Type { get; set; }
+        public string UserType { get; set; }
         public string Values { get; set; }
         public string OriginalValues { get; set; }
         public string ModdedValues { get; set; }
@@ -4975,11 +5206,105 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         public List<MemoryConfig> MemoryConfigs { get; set; }
     }
 
+    public static string NormalizeMemoryUserType(string userType)
+    {
+        if (string.IsNullOrWhiteSpace(userType))
+            return "Boolean";
+
+        string normalized = userType.Trim();
+        if (normalized.Equals("Adjustable", StringComparison.OrdinalIgnoreCase))
+            return "Adjustable";
+
+        if (normalized.Equals("Boolean", StringComparison.OrdinalIgnoreCase))
+            return "Boolean";
+
+        return normalized;
+    }
+
+    public static string NormalizeMemoryAddress(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            return string.Empty;
+
+        return address.Trim().TrimStart('0', 'x', 'X');
+    }
+
+    public static IEnumerable<string> GetMemoryConfigAddresses(MemoryConfig config)
+    {
+        if (config == null)
+            yield break;
+
+        if (!string.IsNullOrWhiteSpace(config.Address))
+            yield return config.Address;
+
+        if (config.Addresses == null)
+            yield break;
+
+        foreach (string address in config.Addresses)
+        {
+            if (!string.IsNullOrWhiteSpace(address))
+                yield return address;
+        }
+    }
+
+    public static bool MemoryConfigsMatch(MemoryConfig a, MemoryConfig b)
+    {
+        if (a == null || b == null)
+            return false;
+
+        var aAddresses = GetMemoryConfigAddresses(a)
+            .Select(NormalizeMemoryAddress)
+            .Where(address => !string.IsNullOrEmpty(address))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var bAddresses = GetMemoryConfigAddresses(b)
+            .Select(NormalizeMemoryAddress)
+            .Where(address => !string.IsNullOrEmpty(address))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (aAddresses.Count > 0 && bAddresses.Count > 0 && aAddresses.Overlaps(bAddresses))
+            return true;
+
+        return !string.IsNullOrWhiteSpace(a.Name)
+               && !string.IsNullOrWhiteSpace(b.Name)
+               && string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static MemoryConfig FindMatchingMemoryConfig(IEnumerable<MemoryConfig> configs, MemoryConfig target) =>
+        configs?.FirstOrDefault(config => MemoryConfigsMatch(config, target));
+
     #endregion
 
     #region ---Helper Functions---
 
-    private static string StripJsonComments(string json)
+    private async Task CheckStashSearchFiles()
+    {
+        string stashSearchImage = SelectedModDataFolder + "/hd/global/ui/panel/StashSearch.sprite";
+        string stashSearchImageLE = SelectedModDataFolder + "/hd/global/ui/panel/StashSearch.lowend.sprite";
+        string stashSearchPath = SelectedModDataFolder + "/global/ui/layouts/bankexpansionlayouthd.json";
+
+        if (!File.Exists(stashSearchImage))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchImage));
+            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchImageLE));
+            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchPath));
+
+            await File.WriteAllBytesAsync(stashSearchImage, await Helper.GetResourceByteArray("StashSearch.sprite"));
+            await File.WriteAllBytesAsync(stashSearchImageLE, await Helper.GetResourceByteArray("StashSearch.lowend.sprite"));
+
+            if (ModInfo.Name == "RMD-MP")
+                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_rmd.json"));
+            else if (ModInfo.Name == "EasternSunLAN")
+                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_esr.json"));
+            else if (ModInfo.Name == "Shattered")
+                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_shattered.json"));
+            else
+                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_retail.json"));
+
+        }
+    }
+
+    public static string StripJsonComments(string json)
     {
         var sb = new StringBuilder(json.Length);
         bool inString = false;
@@ -5029,10 +5354,9 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
     /// <summary>
     /// Ensures the mod HUD config contains all MemoryConfigs entries present in the template file.
-    /// Uses the Name/name field of each entry to decide if it already exists; existing entries are
-    /// never modified, only missing ones are appended.
+    /// Missing entries are appended. Existing entries keep their Values but receive UserType from the template.
     /// </summary>
-    private static void MergeHudTemplateMemoryConfigs(string templatePath, string configPath)
+    public static void MergeHudTemplateMemoryConfigs(string templatePath, string configPath)
     {
         if (!File.Exists(templatePath) || !File.Exists(configPath))
             return;
@@ -5052,30 +5376,34 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
             if (configRoot["MemoryConfigs"] is not JsonArray modMem)
             {
-                // If the mod config has no MemoryConfigs, copy the entire array from the template.
                 configRoot["MemoryConfigs"] = templateMem.DeepClone();
             }
             else
             {
+                var templateOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                };
+
                 foreach (var templateNode in templateMem.OfType<JsonObject>())
                 {
-                    string? templateName = GetMemoryEntryName(templateNode);
-                    if (string.IsNullOrWhiteSpace(templateName))
+                    MemoryConfig? templateConfig = templateNode.Deserialize<MemoryConfig>(templateOptions);
+                    if (templateConfig == null || string.IsNullOrWhiteSpace(templateConfig.Name))
                         continue;
 
-                    bool exists = modMem
+                    JsonObject? existing = modMem
                         .OfType<JsonObject>()
-                        .Any(m =>
+                        .FirstOrDefault(modNode =>
                         {
-                            string? modName = GetMemoryEntryName(m);
-                            return modName != null &&
-                                   string.Equals(modName, templateName, StringComparison.OrdinalIgnoreCase);
+                            MemoryConfig? modConfig = modNode.Deserialize<MemoryConfig>(templateOptions);
+                            return modConfig != null && MemoryConfigsMatch(modConfig, templateConfig);
                         });
 
-                    if (!exists)
-                    {
+                    if (existing == null)
                         modMem.Add(templateNode.DeepClone());
-                    }
+                    else
+                        SyncMemoryConfigUserType(existing, templateNode);
                 }
             }
 
@@ -5088,6 +5416,19 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         {
             _logger.Warn($"Failed to merge HUD template MemoryConfigs into mod config: {ex.Message}");
         }
+    }
+
+    private static void SyncMemoryConfigUserType(JsonObject modEntry, JsonObject templateEntry)
+    {
+        JsonNode? templateUserType = templateEntry["UserType"] ?? templateEntry["userType"];
+        if (templateUserType == null)
+            return;
+
+        string userType = templateUserType is JsonValue jsonValue && jsonValue.TryGetValue<string>(out string? value)
+            ? value
+            : templateUserType.ToString();
+
+        modEntry["UserType"] = NormalizeMemoryUserType(userType);
     }
 
     private static string? GetMemoryEntryName(JsonObject obj)
