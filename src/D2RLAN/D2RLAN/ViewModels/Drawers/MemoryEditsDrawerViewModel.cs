@@ -1542,7 +1542,10 @@ public class MemoryEditsDrawerViewModel : INotifyPropertyChanged
                     else
                     {
                         config.UserType = NormalizeMemoryUserType(config.UserType);
-                        result.Configs.Add(config);
+                        if (IsMinimalMemoryConfig(config))
+                            result.Configs.Add(config);
+                        else
+                            skipped++;
                     }
                 }
                 catch (Exception ex)
