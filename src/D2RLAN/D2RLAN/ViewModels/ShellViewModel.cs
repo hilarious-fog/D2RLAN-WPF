@@ -66,8 +66,17 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     private bool _superTelekinesisEnabled = true;
     private bool _itemIconDisplayEnabled;
     private bool _launcherHasUpdate;
+    private bool _isSavingUserSettings;
+    private bool _isNormalizingUserSettings;
     private string _launcherUpdateString = "D2RLAN Update Ready!";
     private const string TAB_BYTE_CODE = "55AA55AA0100000062000000000000004400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004A4D0000";
+    private static readonly HashSet<string> MinimalMemoryConfigNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Enable TCP/IP Access",
+        "Player Difficulty Scaling Override (Max/UI)",
+        "Player Difficulty Scaling Override (Command)",
+        "Player Difficulty Scaling Override (Actual)"
+    };
     private bool _ColorDyesEnabled = true;
     private bool _ExpandedInventoryEnabled = true;
     private bool _ExpandedStashEnabled = true;
@@ -145,8 +154,6 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
     #region ---Window/Loaded Handlers---
 
-    public SpecialEventsViewModel SpecialEventsVM { get; private set; }
-
     public ShellViewModel() //Main Window
     {
         if (Execute.InDesignMode)
@@ -165,47 +172,12 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         _windowManager = windowManager;
         _configuration = configuration;
         _logger.Info("Shell view model being created..");
-        SpecialEventsVM = new SpecialEventsViewModel(this);
     }
     public async Task ApplyModSettings()
     {
-        await StartAutoBackup();
-        await ConfigureBuffIcons();
-        await ConfigureSkillIcons();
-        await ConfigureMercIcons();
-        await ConfigureItemILvls();
-        await ConfigureRuneDisplay();
-        await ConfigureHideHelmets();
-        await ConfigureMonsterStatsDisplay();
-        await ConfigureItemIcons();
-        await ConfigureSuperTelekinesis();
-        await ConfigureRunewordSorting();
-        await ConfigureHudDesign();
-        await ConfigureColorDyes();
-        await ConfigureCinematicSubs();
-        await ConfigureStringColoring();
-
-        // --- Check for loot filter auto updates if enabled ---
-        if (UserSettings.FilterUpdates)
-        {
-            try
-            {
-                _logger.Info("Checking for loot filter auto-updates...");
-                var lootFilterVM = new LootFilterViewModel(this);
-                await lootFilterVM.CheckForUpdatesAsync();
-                _logger.Info("Loot filter auto-update check completed.");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error during loot filter auto-update: {ex.Message}");
-                // Continue with game launch even if update fails
-            }
-        }
-
-        await CheckStashSearchFiles();
-
+        _logger.Info("Applying minimal fork settings: TCP/IP and player difficulty memory patches only.");
         await ApplyTCPPatch();
-    } //Apply User-Defined QoL Options
+    }
     [UsedImplicitly]
     public async Task OnLoaded(object args)
     {
@@ -226,32 +198,9 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         UserControl = new HomeDrawerView() { DataContext = vm };
         await SaveUserSettings();
 
-        if (!UserSettings.LANOffline)
-            await Task.Run(CheckForLauncherUpdates);
+        LauncherHasUpdate = false;
 
-        vm.OnForceHUDDebug();
-        vm.OnD2RDebugMode();
-        vm.OnD2RDebugModeNoErrors();
-
-        // Event Checker
-        string eventPath = Path.Combine(GamePath, "Mods", ModInfo.Name, ModInfo.Name + ".mpq", "data_noevent");
-        if (Directory.Exists(eventPath))
-        {
-            bool eventActive = false;
-
-            try
-            {
-                eventActive = await SpecialEventsVM.GetCurrentEvents();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("EXCEPTION from GetCurrentEvents:\n" + ex);
-                return;
-            }
-
-            if (!eventActive)
-                _logger.Info("Event is over, leaving event...");
-        }
+        _logger.Info("Minimal fork startup complete.");
     }
 
     // Recursive file copy method
@@ -284,117 +233,10 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                     UserControl = new HomeDrawerView() { DataContext = vm };
                     break;
                 }
-            case "QOL OPTIONS":
-                {
-                    QoLOptionsDrawerViewModel vm = new QoLOptionsDrawerViewModel(this, _windowManager);
-                    await vm.Initialize();
-                    UserControl = new QoLOptionsDrawerView() { DataContext = vm };
-                    break;
-                }
-            case "LOOT FILTER":
-                {
-                    dynamic options = new ExpandoObject();
-                    options.ResizeMode = ResizeMode.NoResize;
-                    options.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-                    LootFilterViewModel vm = new LootFilterViewModel(this);
-
-                    if (await _windowManager.ShowDialogAsync(vm, null, options))
-                    {
-                    }
-                    break;
-                }
-            case "CUSTOMIZATIONS":
-                {
-                    CustomizationsDrawerViewModel vm = new CustomizationsDrawerViewModel(this);
-                    UserControl = new CustomizationsDrawerView() { DataContext = vm };
-                    break;
-                }
             case "MEMORY EDITS":
                 {
                     MemoryEditsDrawerViewModel vm = new MemoryEditsDrawerViewModel(this);
                     UserControl = new MemoryEditsDrawerView() { DataContext = vm };
-                    break;
-                }
-            /*
-        case "HOTKEYS":
-            {
-                dynamic options = new ExpandoObject();
-                options.ResizeMode = ResizeMode.NoResize;
-                options.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-                HotkeysViewModel vm = new HotkeysViewModel(this);
-
-                if (await _windowManager.ShowDialogAsync(vm, null, options))
-                {
-                }
-                break;
-            }
-        case "CHAT":
-            {
-                dynamic options = new ExpandoObject();
-                options.ResizeMode = ResizeMode.NoResize;
-                options.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-
-                ChatSettingsViewModel vm = new ChatSettingsViewModel(this);
-
-                if (await _windowManager.ShowDialogAsync(vm, null, options))
-                {
-                }
-                break;
-            }
-            */
-            case "RENAME CHARACTER":
-                {
-                    if (ModInfo == null || UserSettings == null)
-                        break;
-
-                    await RenameCharacter();
-                    break;
-                }
-            case "COMMUNITY DISCORD":
-                {
-                    if (ModInfo == null || UserSettings == null)
-                        break;
-
-                    if (!string.IsNullOrEmpty(ModInfo.Discord))
-                    {
-                        ProcessStartInfo psi = new ProcessStartInfo(ModInfo.Discord);
-                        psi.UseShellExecute = true;
-                        Process.Start(psi);
-                    }
-                    else
-                        MessageBox.Show(Helper.GetCultureString("NoDiscord"));
-                    break;
-                }
-            case "WIKI":
-                {
-                    if (ModInfo == null || UserSettings == null)
-                        break;
-                    if (!string.IsNullOrEmpty(ModInfo.Wiki))
-                    {
-
-                        ProcessStartInfo psi = new ProcessStartInfo(ModInfo.Wiki);
-                        psi.UseShellExecute = true;
-                        Process.Start(psi);
-                    }
-                    else
-                        MessageBox.Show(Helper.GetCultureString("NoWiki"));
-                    break;
-                }
-            case "COMMUNITY PATREON":
-                {
-                    if (ModInfo == null || UserSettings == null)
-                        break;
-                    if (!string.IsNullOrEmpty(ModInfo.Patreon))
-                    {
-                        ProcessStartInfo psi = new ProcessStartInfo(ModInfo.Patreon);
-                        psi.UseShellExecute = true;
-                        Process.Start(psi);
-                    }
-                    else
-                        MessageBox.Show(Helper.GetCultureString("NoPatreon"));
-
                     break;
                 }
             case "MOD FILES":
@@ -482,50 +324,6 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                     else
                         MessageBox.Show($"{folderPath} Directory does not exist!");
 
-                    break;
-                }
-            case "D2RWEBSITE":
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo("https://d2rmodding.com") { UseShellExecute = true };
-                    Process.Start(psi);
-                    break;
-                }
-            case "D2RDISCORD":
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo("https://www.discord.gg/pqUWcDcjWF") { UseShellExecute = true };
-                    Process.Start(psi);
-                    break;
-                }
-            case "D2RYOUTUBE":
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo("https://www.youtube.com/locbones1") { UseShellExecute = true };
-                    Process.Start(psi);
-                    break;
-                }
-            case "EVENTS":
-                {
-                    try
-                    {
-                        await CheckForEvents();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.Error(e);
-                        MessageBox.Show(e.Message);
-                    }
-                    break;
-                }
-            case "BEACON":
-                {
-                    if (File.Exists("Beacon.exe"))
-                        Process.Start("Beacon.exe");
-
-                    break;
-                }
-            case "PATREON":
-                {
-                    ProcessStartInfo psi = new ProcessStartInfo("https://patreon.com/bonesyd2r") { UseShellExecute = true };
-                    Process.Start(psi);
                     break;
                 }
 
@@ -681,7 +479,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             _userSettings = value;
             _userSettings.PropertyChanged += (sender, args) =>
                                              {
-                                                 Task.Run(SaveUserSettings);
+                                                 if (!_isSavingUserSettings && !_isNormalizingUserSettings)
+                                                     Task.Run(SaveUserSettings);
                                              };
 
             NotifyOfPropertyChange();
@@ -4085,16 +3884,77 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     }
     public async Task SaveUserSettings()
     {
-        //Protected
-        if (Directory.Exists(SelectedModDataFolder))
-            await File.WriteAllTextAsync(SelectedUserSettingsFilePath, JsonConvert.SerializeObject(UserSettings));
-        //Unprotected
-        else
+        if (_isSavingUserSettings)
+            return;
+
+        _isSavingUserSettings = true;
+        try
         {
-            if (ModInfo != null)
-                await File.WriteAllTextAsync(SelectedUserSettingsFilePath, JsonConvert.SerializeObject(UserSettings).Replace($"{Settings.Default.SelectedMod}.mpq/", ""));
+            EnforceMinimalUserSettings();
+
+            //Protected
+            if (Directory.Exists(SelectedModDataFolder))
+                await File.WriteAllTextAsync(SelectedUserSettingsFilePath, JsonConvert.SerializeObject(UserSettings, Formatting.Indented));
+            //Unprotected
+            else
+            {
+                if (ModInfo != null)
+                    await File.WriteAllTextAsync(SelectedUserSettingsFilePath, JsonConvert.SerializeObject(UserSettings, Formatting.Indented).Replace($"{Settings.Default.SelectedMod}.mpq/", ""));
+            }
         }
-            
+        finally
+        {
+            _isSavingUserSettings = false;
+        }
+
+    }
+
+    private void EnforceMinimalUserSettings()
+    {
+        if (UserSettings == null)
+            return;
+
+        _isNormalizingUserSettings = true;
+        try
+        {
+            UserSettings.AutoBackups = 0;
+            UserSettings.ItemIcons = 0;
+            UserSettings.SkillIcons = 0;
+            UserSettings.BuffIcons = 0;
+            UserSettings.MercIcons = 0;
+            UserSettings.ItemIlvls = 0;
+            UserSettings.RuneDisplay = 0;
+            UserSettings.HideHelmets = 0;
+            UserSettings.MonsterStatsDisplay = 0;
+            UserSettings.MonsterHP = 0;
+            UserSettings.RunewordSorting = 0;
+            UserSettings.StringColoring = 0;
+            UserSettings.HudDesign = 0;
+            UserSettings.UiTheme = 0;
+            UserSettings.ColorDye = 0;
+            UserSettings.SuperTelekinesis = 0;
+            UserSettings.CinematicSubs = 0;
+            UserSettings.FilterUpdates = false;
+            UserSettings.LootFilter = 0;
+            UserSettings.ShortenedLevels = 0;
+            UserSettings.DirectTxt = false;
+            UserSettings.PersonalizedTabs = 0;
+            UserSettings.PersonalizedStashTabs = 0;
+            UserSettings.ExpandedInventory = false;
+            UserSettings.ExpandedStash = false;
+            UserSettings.ExpandedCube = false;
+            UserSettings.ExpandedMerc = false;
+            UserSettings.Cheats = false;
+            UserSettings.CheatsActive = false;
+            UserSettings.MSIFix = false;
+            UserSettings.D2RDebugMode = false;
+            UserSettings.D2RDebugModeNoErrors = false;
+            UserSettings.BeaconStartup = 2;
+        }
+        finally
+        {
+            _isNormalizingUserSettings = false;
+        }
     }
 
     #endregion
@@ -4529,6 +4389,19 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     public async Task ApplyTCPPatch()
     {
         string configPath = Path.Combine(GamePath, $"HUDConfig_{ModInfo.Name}.json");
+        string hudTemplatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HUDConfig_Template.json");
+        string overridePath = Path.Combine(
+            GamePath,
+            "Mods",
+            ModInfo.Name,
+            $"{ModInfo.Name}.mpq",
+            "data",
+            "D2RLAN",
+            "memory_overrides.json");
+
+        if (!File.Exists(configPath) && File.Exists(hudTemplatePath))
+            RebuildHudConfigFromTemplate(configPath, hudTemplatePath, overridePath);
+
         var config = LoadConfig(configPath);
 
         if (config == null)
@@ -4538,19 +4411,12 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         }
 
         // --- Load override config ---
-        string overridePath = Path.Combine(
-            GamePath,
-            "Mods",
-            ModInfo.Name,
-            $"{ModInfo.Name}.mpq",
-            "data",
-            "D2RLAN",
-            "memory_overrides.json");
         if (File.Exists(overridePath))
         {
             try
             {
                 ApplyMemoryOverridesToHudConfig(configPath, overridePath);
+                PruneHudConfigToMinimalMemoryConfigs(configPath);
             }
             catch (Exception ex)
             {
@@ -4567,10 +4433,10 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         // Ensure HUD config contains all template memory entries before applying TCP patch
         try
         {
-            string hudTemplatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HUDConfig_Template.json");
             if (File.Exists(hudTemplatePath) && File.Exists(configPath))
             {
                 MergeHudTemplateMemoryConfigs(hudTemplatePath, configPath);
+                PruneHudConfigToMinimalMemoryConfigs(configPath);
             }
         }
         catch (Exception ex)
@@ -4578,80 +4444,23 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             _logger.Warn($"Failed to pre-merge HUD template into config before ApplyTCPPatch: {ex.Message}");
         }
 
-        bool useDebugExecutable = UsesD2RDebugExecutable(UserSettings);
-        bool noErrorsMode = UserSettings.D2RDebugModeNoErrors;
+        config = LoadConfig(configPath);
+        if (config == null)
+        {
+            _logger.Error("Failed to reload minimal configuration file");
+            return;
+        }
+
         string arguments = UserSettings.CurrentD2RArgs;
 
-        _logger.Info(
-            $"Launch flags: D2RDebugMode={UserSettings.D2RDebugMode}, " +
-            $"D2RDebugModeNoErrors={noErrorsMode}, GamePath={GamePath}");
+        _logger.Info($"Launch flags: GamePath={GamePath}");
 
-        if (HomeDrawerViewModel.ImageRNG == 10)
-            arguments += " -cheats";
-        else if (ModInfo.Name == "RMD-MP")
-            arguments = arguments.Replace(" -cheats", "");
-
-        if (useDebugExecutable && arguments.IndexOf("-cheats", StringComparison.OrdinalIgnoreCase) < 0)
-            arguments += " -cheats";
-
-        List<string> MSIPath = null;
-
-        if (UserSettings.MSIFix)
-        {
-            MSIPath = CloseMSIAfterburner("MSIAfterburner");
-            CloseRivaTuner("RTSS");
-            CloseRivaTuner("RTSSHooksLoader64");
-            CloseRivaTuner("EncoderServer");
-            await Task.Delay(1000);
-        }
-
-        string launchExePath;
-        if (noErrorsMode)
-        {
-            D2RDebugNoErrorsPatcher.EnsureResult ensureResult =
-                D2RDebugNoErrorsPatcher.EnsureNoErrorsExecutable(GamePath);
-
-            launchExePath = ensureResult.LaunchExePath;
-
-            if (ensureResult.PatchResult != null)
-            {
-                _logger.Info(
-                    $"Built {D2RDebugNoErrorsPatcher.NoErrorsDebugExeFileName} from " +
-                    $"{D2RDebugNoErrorsPatcher.SourceDebugExeFileName}");
-                foreach (string line in ensureResult.PatchResult.Details)
-                    _logger.Info($"No-errors exe patch: {line}");
-                _logger.Info(
-                    $"No-errors exe patch complete: {ensureResult.PatchResult.Succeeded}/" +
-                    $"{ensureResult.PatchResult.Total}");
-            }
-
-            if (!ensureResult.Success || !File.Exists(launchExePath))
-            {
-                string error = ensureResult.ErrorMessage
-                    ?? $"Failed to prepare {D2RDebugNoErrorsPatcher.NoErrorsDebugExeFileName}.";
-                _logger.Error(error);
-                MessageBox.Show(
-                    error + Environment.NewLine + Environment.NewLine +
-                    $"Expected file:{Environment.NewLine}{launchExePath}",
-                    "D2R Debug Mode (No Errors)",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-        }
-        else
-        {
-            string exeFileName = useDebugExecutable
-                ? D2RDebugNoErrorsPatcher.SourceDebugExeFileName
-                : "d2r.exe";
-            launchExePath = Path.Combine(GamePath, exeFileName);
-        }
+        string launchExePath = Path.Combine(GamePath, "d2r.exe");
 
         _logger.Info($"Launching executable: {launchExePath}");
-        bool useShellExecuteForLaunch = useDebugExecutable;
-        Process process = LaunchProcess(launchExePath, arguments, GamePath, useShellExecuteForLaunch);
+        Process process = LaunchProcess(launchExePath, arguments, GamePath, false);
 
-        if (!useDebugExecutable)
+        if (process != null)
         {
             Thread.Sleep(1500);
 
@@ -4668,32 +4477,8 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
 
         if (process != null)
         {
-            if (noErrorsMode)
-            {
-                _logger.Info(
-                    $"D2R Debug Mode (No Errors): launched {launchExePath}");
-            }
-            else if (useDebugExecutable)
-            {
-                _logger.Info("Skipping HUD loader and memory edits — D2R Debug Mode.");
-            }
-            else
-            {
-                int skillIndex = await CheckSkillIndexAsync();
-                _logger.Info($"Memory Editing tasks begun, SkillIndex: {skillIndex}");
-                EditMemory(process.Id, config.MemoryConfigs, skillIndex);
-            }
-
-            // Restore MSI if needed
-            if (UserSettings.MSIFix && MSIPath != null)
-            {
-                foreach (var path in MSIPath)
-                {
-                    await Task.Delay(1000);
-                    Process.Start(path);
-                }
-            }
-
+            _logger.Info("Memory editing tasks begun.");
+            EditMemory(process.Id, config.MemoryConfigs);
             UserSettings.MapLayout = 0;
         }
 
@@ -4706,9 +4491,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             Console.ReadKey();
         }
 
-        TTS_Service.Start(this);
-
-        _logger.Info($"\n\n--------------------\nMod Name: {ModInfo.Name}\nGame Path: {GamePath}\nSave Path: {SaveFilesFilePath}\nLaunch Arguments: {UserSettings.CurrentD2RArgs}\n\nAudio Language: {UserSettings.AudioLanguage}\nText Language: {UserSettings.TextLanguage}\nUI Theme: {UserSettings.UiTheme}\nWindow Mode: {UserSettings.WindowMode}\nHDR Fix: {UserSettings.HdrFix}\n\nFont: {UserSettings.Font}\nBackups: {UserSettings.AutoBackups}\nPersonalized Tabs: {UserSettings.PersonalizedStashTabs}\nExpanded Cube: {UserSettings.ExpandedCube}\nExpanded Inventory: {UserSettings.ExpandedInventory}\nExpanded Merc: {UserSettings.ExpandedMerc}\nExpanded Stash: {UserSettings.ExpandedStash}\nBuff Icons: {UserSettings.BuffIcons}\nMonster Display: {UserSettings.MonsterStatsDisplay}\nSkill Icons: {UserSettings.SkillIcons}\nMerc Identifier: {UserSettings.MercIcons}\nItem Levels: {UserSettings.ItemIlvls}\nRune Display: {UserSettings.RuneDisplay}\nHide Helmets: {UserSettings.HideHelmets}\nItem Display: {UserSettings.ItemIcons}\nSuper Telekinesis: {UserSettings.SuperTelekinesis}\nColor Dyes: {UserSettings.ColorDye}\nCinematic Subtitles: {UserSettings.CinematicSubs}\nRuneword Sorting: {UserSettings.RunewordSorting}\nMerged HUD: {UserSettings.HudDesign}\nData Integrity: {UserSettings.DataHashPass}\n--------------------");
+        _logger.Info($"\n\n--------------------\nMod Name: {ModInfo.Name}\nGame Path: {GamePath}\nSave Path: {SaveFilesFilePath}\nLaunch Arguments: {UserSettings.CurrentD2RArgs}\n\nAudio Language: {UserSettings.AudioLanguage}\nText Language: {UserSettings.TextLanguage}\nWindow Mode: {UserSettings.WindowMode}\nHDR Fix: {UserSettings.HdrFix}\nData Integrity: {UserSettings.DataHashPass}\nMinimal fork memory edits: TCP/IP + player difficulty scaling\n--------------------");
     }
 
     static bool SameTarget(JsonObject a, JsonObject b)
@@ -5037,7 +4820,7 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         return Convert.ToInt64(normalized, 16);
     }
 
-    public static void EditMemory(int processId, List<MemoryConfig> memoryConfigs, int skillIndex)
+    public static void EditMemory(int processId, List<MemoryConfig> memoryConfigs)
     {
         int desiredAccess = PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION;
         IntPtr hProcess = OpenProcess(desiredAccess, false, processId);
@@ -5058,16 +4841,16 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         int totalAddresses = 0;
         int successfulAddresses = 0;
 
-        bool CountedProcessAddress(string address, int length, string type, string values)
+        bool CountedProcessAddress(string address, int length, string type, string values, string originalValues)
         {
             totalAddresses++;
-            bool ok = ProcessAddress(baseAddress, hProcess, address, length, type, values);
+            bool ok = ProcessAddress(baseAddress, hProcess, address, length, type, values, originalValues);
             if (ok) successfulAddresses++;
             return ok;
         }
 
         // Process entries found in the config.json file
-        foreach (var entry in memoryConfigs)
+        foreach (var entry in memoryConfigs?.Where(IsMinimalMemoryConfig) ?? Enumerable.Empty<MemoryConfig>())
         {
             totalOperations++;
             bool allSucceeded = true;
@@ -5078,13 +4861,13 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                 {
                     foreach (var address in entry.Addresses)
                     {
-                        if (!CountedProcessAddress(address, entry.Length, entry.Type, entry.Values))
+                        if (!CountedProcessAddress(address, entry.Length, entry.Type, entry.Values, entry.OriginalValues))
                             allSucceeded = false;
                     }
                 }
                 else if (!string.IsNullOrEmpty(entry.Address))
                 {
-                    if (!CountedProcessAddress(entry.Address, entry.Length, entry.Type, entry.Values))
+                    if (!CountedProcessAddress(entry.Address, entry.Length, entry.Type, entry.Values, entry.OriginalValues))
                         allSucceeded = false;
                 }
             }
@@ -5098,54 +4881,12 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
                 successfulOperations++;
         }
 
-        // Force-enable cheats for the below "QoL" functions
-        {
-            totalOperations++;
-            bool allSucceeded = true;
-
-            // Identify All, Reset Skills, Reset Stats, Force Save, Clear Ground Items, Attack Info
-            string[] qolAddresses = { "1803258", "18034C8", "18034F8", "1803588", "1803888", "18037F8" };
-
-            foreach (var addr in qolAddresses)
-            {
-                if (!CountedProcessAddress(addr, 1, "Hex", "01"))
-                    allSucceeded = false;
-            }
-
-            if (allSucceeded)
-                successfulOperations++;
-        }
-
-        // Memory edits needed to hotfix controller crashing when viewing icons above the retail index range. This may not be all possible edits needed; but no known issues currently.
-        if (skillIndex != 369)
-        {
-            totalOperations++;
-            bool allSucceeded = true;
-
-            string[] skillAddrs = { "B4CBB", "CAEE3", "CB7DF", "CD2CD", "CD642", "111ED5" };
-            string[] skillAddrsPlusOne = { "111F39", "111F9D", "112002" };
-
-            foreach (var addr in skillAddrs)
-            {
-                if (!CountedProcessAddress(addr, 2, "Hex", BitConverter.ToString(ConvertToLittleEndian(skillIndex)).Replace("-", "")))
-                    allSucceeded = false;
-            }
-            foreach (var addr in skillAddrsPlusOne)
-            {
-                if (!CountedProcessAddress(addr, 2, "Hex", BitConverter.ToString(ConvertToLittleEndian(skillIndex + 1)).Replace("-", "")))
-                    allSucceeded = false;
-            }
-
-            if (allSucceeded)
-                successfulOperations++;
-        }
-
         CloseHandle(hProcess);
 
         _logger.Info($"Memory edits complete: {successfulOperations}/{totalOperations} Operations and {successfulAddresses}/{totalAddresses} Addresses.");
     }
 
-    static bool ProcessAddress(IntPtr baseAddress, IntPtr hProcess, string address, int length, string type, string values)
+    static bool ProcessAddress(IntPtr baseAddress, IntPtr hProcess, string address, int length, string type, string values, string originalValues)
     {
         long offset = ParseMemoryOffset(address);
         IntPtr effectiveAddress = new IntPtr(baseAddress.ToInt64() + offset);
@@ -5153,24 +4894,28 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         if (debugLogging)
             Console.WriteLine($"Offset: 0x{offset:X}, Effective Address: 0x{effectiveAddress:X}");
 
-        byte[] valueBytes;
-        if (type.Equals("Integer", StringComparison.OrdinalIgnoreCase))
+        if (!TryConvertMemoryValue(type, values, length, out byte[] valueBytes))
+            return false;
+
+        byte[] currentBytes = new byte[length];
+        int bytesRead = 0;
+        if (!ReadProcessMemory(hProcess, effectiveAddress, currentBytes, length, ref bytesRead) || bytesRead != length)
         {
-            if (!int.TryParse(values, out int intValue))
+            _logger.Warn($"Could not verify current bytes at 0x{effectiveAddress:X}; skipping write.");
+            return false;
+        }
+
+        if (TryConvertMemoryValue(type, originalValues, length, out byte[] originalBytes))
+        {
+            if (!currentBytes.SequenceEqual(originalBytes) && !currentBytes.SequenceEqual(valueBytes))
             {
-                _logger.Warn($"Invalid integer value: {values}");
+                _logger.Warn($"Original byte mismatch at 0x{effectiveAddress:X}; skipping write for compatibility safety.");
                 return false;
             }
-            valueBytes = BitConverter.GetBytes(intValue).Take(length).ToArray();
         }
-        else if (type.Equals("Hex", StringComparison.OrdinalIgnoreCase))
+        else if (!currentBytes.SequenceEqual(valueBytes))
         {
-            try { valueBytes = Convert.FromHexString(values.Replace(" ", "")); }
-            catch { _logger.Warn($"Invalid hex string: {values}"); return false; }
-        }
-        else
-        {
-            _logger.Warn($"Unknown type: {type}");
+            _logger.Warn($"No verifiable original bytes for 0x{effectiveAddress:X}; skipping first-time write for compatibility safety.");
             return false;
         }
 
@@ -5183,6 +4928,42 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
             Console.WriteLine($"Wrote {valueBytes.Length} bytes to 0x{effectiveAddress:X}");
 
         return success;
+    }
+
+    private static bool TryConvertMemoryValue(string type, string values, int length, out byte[] valueBytes)
+    {
+        valueBytes = null;
+
+        if (string.IsNullOrWhiteSpace(values) || values.Contains('?') || values.Equals("NO_DEFAULT_VALUES_MOD_SPECIFIC", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (type.Equals("Integer", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!int.TryParse(values, out int intValue))
+            {
+                _logger.Warn($"Invalid integer value: {values}");
+                return false;
+            }
+            valueBytes = BitConverter.GetBytes(intValue).Take(length).ToArray();
+            return true;
+        }
+
+        if (type.Equals("Hex", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                valueBytes = Convert.FromHexString(values.Replace(" ", ""));
+                return valueBytes.Length == length;
+            }
+            catch
+            {
+                _logger.Warn($"Invalid hex string: {values}");
+                return false;
+            }
+        }
+
+        _logger.Warn($"Unknown type: {type}");
+        return false;
     }
 
     public class MemoryConfig
@@ -5204,6 +4985,39 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
         public bool MonsterStatsDisplay { get; set; }
         public List<string> DLLsToLoad { get; set; }
         public List<MemoryConfig> MemoryConfigs { get; set; }
+    }
+
+    public static bool IsMinimalMemoryConfig(MemoryConfig config)
+    {
+        return config != null && MinimalMemoryConfigNames.Contains(config.Name ?? string.Empty);
+    }
+
+    public static void PruneHudConfigToMinimalMemoryConfigs(string configPath)
+    {
+        if (!File.Exists(configPath))
+            return;
+
+        try
+        {
+            var root = JsonNode.Parse(StripJsonComments(File.ReadAllText(configPath)))?.AsObject();
+            if (root?["MemoryConfigs"] is not JsonArray memoryConfigs)
+                return;
+
+            JsonArray minimalConfigs = new();
+            foreach (var entry in memoryConfigs.OfType<JsonObject>())
+            {
+                string name = entry["Name"]?.ToString() ?? string.Empty;
+                if (MinimalMemoryConfigNames.Contains(name))
+                    minimalConfigs.Add(entry.DeepClone());
+            }
+
+            root["MemoryConfigs"] = minimalConfigs;
+            File.WriteAllText(configPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn($"Failed to prune HUD config to minimal memory edits: {ex.Message}");
+        }
     }
 
     public static string NormalizeMemoryUserType(string userType)
@@ -5276,33 +5090,6 @@ public class ShellViewModel : Conductor<IScreen>.Collection.OneActive
     #endregion
 
     #region ---Helper Functions---
-
-    private async Task CheckStashSearchFiles()
-    {
-        string stashSearchImage = SelectedModDataFolder + "/hd/global/ui/panel/StashSearch.sprite";
-        string stashSearchImageLE = SelectedModDataFolder + "/hd/global/ui/panel/StashSearch.lowend.sprite";
-        string stashSearchPath = SelectedModDataFolder + "/global/ui/layouts/bankexpansionlayouthd.json";
-
-        if (!File.Exists(stashSearchImage))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchImage));
-            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchImageLE));
-            Directory.CreateDirectory(Path.GetDirectoryName(stashSearchPath));
-
-            await File.WriteAllBytesAsync(stashSearchImage, await Helper.GetResourceByteArray("StashSearch.sprite"));
-            await File.WriteAllBytesAsync(stashSearchImageLE, await Helper.GetResourceByteArray("StashSearch.lowend.sprite"));
-
-            if (ModInfo.Name == "RMD-MP")
-                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_rmd.json"));
-            else if (ModInfo.Name == "EasternSunLAN")
-                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_esr.json"));
-            else if (ModInfo.Name == "Shattered")
-                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_shattered.json"));
-            else
-                await File.WriteAllBytesAsync(stashSearchPath, await Helper.GetResourceByteArray("bankexpansionlayouthd_stashsearch_retail.json"));
-
-        }
-    }
 
     public static string StripJsonComments(string json)
     {

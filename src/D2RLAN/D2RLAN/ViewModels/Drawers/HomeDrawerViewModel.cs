@@ -141,19 +141,6 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
             MapLayouts.Add(new KeyValuePair<string, eMapLayouts>(mapLayout.GetAttributeOfType<DisplayAttribute>().Name, mapLayout));
         }
 
-        foreach (eWindowMode windowMode in Enum.GetValues<eWindowMode>())
-        {
-            WindowMode.Add(new KeyValuePair<string, eWindowMode>(windowMode.GetAttributeOfType<DisplayAttribute>().Name, windowMode));
-        }
-
-        foreach (eUiThemes uiTheme in Enum.GetValues<eUiThemes>())
-        {
-            UiThemes.Add(new KeyValuePair<string, eUiThemes>(uiTheme.GetAttributeOfType<DisplayAttribute>().Name, uiTheme));
-        }
-
-        ImageSource = "pack://application:,,,/Resources/Images/ChatGem1b.png";
-        ImageRNG = 0;
-
         await InitializeLanguage();
         await InitializeMods();
         GetD2RArgs();
@@ -161,18 +148,9 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
         {
             ShellViewModel.UserSettings.MapSeed = "";
             ShellViewModel.UserSettings.MapSeedName = "An Evil Force's Seed: ";
-
-            if (SelectedMod == "RMD-MP")
-            {
-                ShellViewModel.UserSettings.Cheats = false;
-                ShellViewModel.UserSettings.CheatsActive = false;
-                CheatsEnabled = false;
-            }
-            else
-            {
-                ShellViewModel.UserSettings.CheatsActive = true;
-                CheatsEnabled = true;
-            }
+            ShellViewModel.UserSettings.Cheats = false;
+            ShellViewModel.UserSettings.CheatsActive = false;
+            CheatsEnabled = false;
         }
     }
     public async Task InitializeLanguage()
@@ -232,61 +210,19 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
 
                     await LoadUserSettings();
 
-                    await ShellViewModel.StartAutoBackup();
-
-                    if (ShellViewModel.ModInfo.Name == "RMD-MP")
-                    {
-                        UiThemeEnabled = true;
-                        ShellViewModel.WikiEnabled = true;
-                        ShellViewModel.ShowItemLevelsEnabled = true;
-                        ShellViewModel.UserSettings.SuperTelekinesis = 1;
-                        ShellViewModel.SuperTelekinesisEnabled = false;
-                        ShellViewModel.SkillBuffIconsEnabled = false;
-                        ShellViewModel.UserSettings.SkillIcons = 1;
-                        ShellViewModel.SkillIconPackEnabled = false;
-                        ShellViewModel.ItemIconDisplayEnabled = false;
-                        //ShellViewModel.UserSettings.ItemIlvls = 1;
-                        ShellViewModel.ExpandedInventoryEnabled = false;
-                        ShellViewModel.ExpandedStashEnabled = false;
-                        ShellViewModel.ExpandedCubeEnabled = false;
-                        ShellViewModel.ExpandedMercEnabled = false;
-                        ShellViewModel.ColorDyesEnabled = false;
-                    }
-                    else if (ShellViewModel.ModInfo.Name == "Shattered")
-                    {
-                        UiThemeEnabled = true;
-                        ShellViewModel.WikiEnabled = true;
-                        ShellViewModel.ShowItemLevelsEnabled = true;
-                        ShellViewModel.UserSettings.SuperTelekinesis = 1;
-                        ShellViewModel.SuperTelekinesisEnabled = true;
-                        ShellViewModel.SkillBuffIconsEnabled = false;
-                        ShellViewModel.UserSettings.SkillIcons = 1;
-                        ShellViewModel.SkillIconPackEnabled = true;
-                        ShellViewModel.ItemIconDisplayEnabled = true;
-                        //ShellViewModel.UserSettings.ItemIlvls = 1;
-                        ShellViewModel.ExpandedInventoryEnabled = false;
-                        ShellViewModel.ExpandedStashEnabled = false;
-                        ShellViewModel.ExpandedCubeEnabled = false;
-                        ShellViewModel.ExpandedMercEnabled = false;
-                        ShellViewModel.ColorDyesEnabled = true;
-                    }
-                    else
-                    {
-                        UiThemeEnabled = false;
-                        ShellViewModel.WikiEnabled = true;
-                        ShellViewModel.UserSettings.UiTheme = 1;
-
-                        ShellViewModel.ShowItemLevelsEnabled = true;
-                        ShellViewModel.SuperTelekinesisEnabled = true;
-                        ShellViewModel.SkillBuffIconsEnabled = true;
-                        ShellViewModel.SkillIconPackEnabled = true;
-                        ShellViewModel.ItemIconDisplayEnabled = true;
-                        ShellViewModel.ExpandedInventoryEnabled = true;
-                        ShellViewModel.ExpandedStashEnabled = true;
-                        ShellViewModel.ExpandedCubeEnabled = true;
-                        ShellViewModel.ExpandedMercEnabled = true;
-                        ShellViewModel.ColorDyesEnabled = true;
-                    }
+                    UiThemeEnabled = false;
+                    ShellViewModel.WikiEnabled = false;
+                    ShellViewModel.ShowItemLevelsEnabled = false;
+                    ShellViewModel.SuperTelekinesisEnabled = false;
+                    ShellViewModel.SkillBuffIconsEnabled = false;
+                    ShellViewModel.SkillIconPackEnabled = false;
+                    ShellViewModel.ItemIconDisplayEnabled = false;
+                    ShellViewModel.ExpandedInventoryEnabled = false;
+                    ShellViewModel.ExpandedStashEnabled = false;
+                    ShellViewModel.ExpandedCubeEnabled = false;
+                    ShellViewModel.ExpandedMercEnabled = false;
+                    ShellViewModel.ColorDyesEnabled = false;
+                    await ShellViewModel.SaveUserSettings();
 
                     GetD2RArgs();
                     
@@ -672,61 +608,6 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                 }
             }
 
-            // --- Ensure lootfilter.lua exists ---
-            if (!File.Exists($@"{ShellViewModel.GamePath}lootfilter.lua") || !File.Exists($@"{ShellViewModel.GamePath}lootfilter_config.lua"))
-            {
-                string lootFilterUrl = "https://drive.google.com/uc?export=download&id=157sEJn8LSpNWwlwuEnrSPo23UULzJmNs";
-                string guideUrl = "https://drive.google.com/uc?export=download&id=1Rtypc8FRRn14rNtTpeXGEEYXaUoiV5lb";
-                using var client = new HttpClient();
-
-                try
-                {
-                    _logger.Info("Loot filter not found. Downloading required files...");
-
-                    // Download core files into game folder
-                    await DownloadFileAsync(client, lootFilterUrl, $@"{ShellViewModel.GamePath}lootfilter.lua");
-                    await DownloadFileAsync(client, guideUrl, $@"{ShellViewModel.GamePath}lootfilter_guide.pdf");
-                    await File.WriteAllBytesAsync($@"{ShellViewModel.GamePath}lootfilter_config.lua", Helper.GetResourceByteArray2("lootfilter_config_blank.lua"));
-
-                    // Ensure required mod directories exist
-                    string filtersDir = Path.Combine(ShellViewModel.SelectedModDataFolder, "D2RLAN", "Filters");
-                    Directory.CreateDirectory(filtersDir);
-
-                    // Copy default filter if available
-                    string defaultFilter = Path.Combine(filtersDir, "lootfilter_default.lua");
-                    if (File.Exists(defaultFilter))
-                    {
-                        File.Copy(defaultFilter, $@"{ShellViewModel.GamePath}lootfilter_config.lua", overwrite: true);
-                        _logger.Info("Default loot filter config copied.");
-                    }
-                    _logger.Info("Loot filter files downloaded successfully.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Failed to download loot filter files: {ex.Message}");
-                    MessageBox.Show($"Failed to download one or more loot filter files:\n{ex.Message}", "Download Error",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            // Copy override rules if available
-            string overrideRules = Path.Combine(Path.Combine(ShellViewModel.SelectedModDataFolder, "D2RLAN", "Filters"), "override_rules.lua");
-            string overrideRulesBase = Path.Combine(Path.Combine(ShellViewModel.SelectedModDataFolder, "D2RLAN", "Filters"), "override_rules.lua");
-            if (File.Exists(overrideRules))
-            {
-                File.Copy(overrideRules, $@"{ShellViewModel.GamePath}override_rules.lua", overwrite: true);
-                _logger.Info("Override rules copied.");
-            }
-            else
-            {
-                if (File.Exists("../D2R/override_rules.lua"))
-                    File.Delete("../D2R/override_rules.lua");
-
-                _logger.Info("Override rules removed.");
-            }
-
-
             // --- Ensure ModInfo is available ---
             if (ShellViewModel.ModInfo == null)
             {
@@ -737,71 +618,19 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
             // --- Apply Mod Fixes and Settings ---
             try
             {
-                await ApplyHdrFix();
-                await ApplyCinematicSkip();
-                _logger.Info("Applying mod settings...");
                 await ShellViewModel.SaveUserSettings();
-                await ShellViewModel.ApplyModSettings();
                 _logger.Info("Generating D2R launch arguments...");
                 GetD2RArgs();
-                //await StashMigration();
                 _logger.Info("Disabling Battle.net connection...");
                 ShellViewModel.DisableBNetConnection();
+                _logger.Info("Applying mod settings...");
+                await ShellViewModel.ApplyModSettings();
             }
             catch (Exception ex)
             {
                 _logger.Error($"Error applying mod fixes/settings: {ex.Message}");
                 return;
             }
-
-            string fontsFolder = Path.Combine(ShellViewModel.SelectedModDataFolder, "hd", "ui", "fonts");
-            string targetFontPath = Path.Combine(fontsFolder, "exocetblizzardot-medium.otf");
-
-            // --- Install Exocet font ---
-            if (!File.Exists(targetFontPath))
-            {
-                try
-                {
-                    string fontPath = Path.Combine(ShellViewModel.GamePath, "Exocet.otf");
-                    if (!File.Exists(fontPath))
-                    {
-                        _logger.Info("Installing Exocet.otf font into game folder...");
-                        byte[] font = await Helper.GetResourceByteArray("Fonts.0.otf");
-                        await File.WriteAllBytesAsync(fontPath, font);
-                    }
-
-                    if (!Directory.Exists(fontsFolder))
-                    {
-                        Directory.CreateDirectory(fontsFolder);
-                        _logger.Info($"Created missing mod fonts folder: {fontsFolder}");
-                    }
-
-                    byte[] fontBytes = ShellViewModel.UserSettings.TextLanguage == 6 ? await Helper.GetResourceByteArray("Fonts.retail.otf") : await Helper.GetResourceByteArray("Fonts.0.otf");
-
-                    await File.WriteAllBytesAsync(targetFontPath, fontBytes);
-                    _logger.Info("Localized Exocet font installed successfully.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Failed to install Exocet fonts: {ex.Message}");
-                }
-            }
-            
-
-            //Beacon Startup
-            if (ShellViewModel.UserSettings.BeaconStartup == 0)
-            {
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "Beacon.exe",
-                    WindowStyle = ProcessWindowStyle.Minimized,
-                    UseShellExecute = true
-                };
-                Process.Start(startInfo);
-            }
-            if (ShellViewModel.UserSettings.BeaconStartup == 1)
-                Process.Start("Beacon.exe");
-
         }
         catch (Exception ex)
         {
@@ -820,13 +649,6 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
     public string GetD2RArgs()
     {
         string args = string.Empty;
-        string regenArg = ShellViewModel?.UserSettings?.ResetMaps ?? false ? " -resetofflinemaps" : string.Empty;
-        string respecArg = ShellViewModel?.UserSettings?.InfiniteRespec ?? false ? " -enablerespec" : string.Empty;
-        string windowedArg = ShellViewModel?.UserSettings?.WindowMode >= 1 ? " -windowed" : string.Empty;
-        string cheatsArg = ShellViewModel?.UserSettings?.Cheats ?? false ? " -cheats" : string.Empty;
-        string soundArg = ShellViewModel?.UserSettings?.NoSound ?? false ? " -ns" : string.Empty;
-        string logoArg = ShellViewModel?.UserSettings?.SkipLogos ?? false ? " -skiplogovideo" : string.Empty;
-        string lowendArg = ShellViewModel?.UserSettings?.ForceLowend ?? false ? " -lowendsprites" : string.Empty;
         string mapLayoutArg = GetMapLayoutArg();
 
         string excelDir = System.IO.Path.Combine(ShellViewModel.SelectedModDataFolder, "global/excel");
@@ -853,7 +675,7 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
 
         string mArgs = args;
 
-        args = $"{mArgs}{regenArg}{respecArg}{mapLayoutArg}{windowedArg}{cheatsArg}{soundArg}{logoArg}{lowendArg}";
+        args = $"{mArgs}{mapLayoutArg}";
 
         if (ShellViewModel?.UserSettings == null)
             return string.Empty;
@@ -1697,8 +1519,7 @@ public class HomeDrawerViewModel : INotifyPropertyChanged
                 };
                 Process.Start(memProcess);
 
-                int skillIndex = await ShellViewModel.CheckSkillIndexAsync();
-                ShellViewModel.EditMemory(process.Id, config.MemoryConfigs, skillIndex);
+                ShellViewModel.EditMemory(process.Id, config.MemoryConfigs);
 
                 break;
             }

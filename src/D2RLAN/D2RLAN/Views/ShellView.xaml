@@ -65,49 +65,10 @@
                 </syncfusion:NavigationItem.Icon>
                 <syncfusion:NavigationItem.Items>
                 <syncfusion:NavigationItem
-                    Header="{Binding Path=ModOptions, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="QoL Options" />
-                <syncfusion:NavigationItem
-                    Header="Memory Edits"
+                    Header="Player Counts"
                     Style="{StaticResource NavigationItemGoldStyle}"
                     Tag="Memory Edits" />
-                <syncfusion:NavigationItem
-                    Header="Loot Filter"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Loot Filter" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Customizations, Source={StaticResource Resources}}"
-                    IsEnabled="{Binding CustomizationsEnabled}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Customizations" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Rename, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Rename Character" />
                 </syncfusion:NavigationItem.Items>
-            </syncfusion:NavigationItem>
-            <syncfusion:NavigationItem
-                Header="{Binding Path=Community, Source={StaticResource Resources}}"
-                IsEnabled="{Binding DiabloInstallDetected}"
-                Style="{StaticResource NavigationItemStyle}"
-                Tag="Community">
-                <syncfusion:NavigationItem.Icon>
-                    <Image Source="pack://application:,,,/Resources/Icons/Icon_Social.png" />
-                </syncfusion:NavigationItem.Icon>
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Discord, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Community Discord" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Wiki, Source={StaticResource Resources}}"
-                    IsEnabled="{Binding WikiEnabled}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Wiki" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Patreon, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="Community Patreon" />
             </syncfusion:NavigationItem>
             <syncfusion:NavigationItem
                 Header="{Binding Path=MyFiles, Source={StaticResource Resources}}"
@@ -134,85 +95,6 @@
                     Style="{StaticResource NavigationItemGoldStyle}"
                     Tag="Error Logs" />
             </syncfusion:NavigationItem>
-            <syncfusion:NavigationItem
-                Header="D2RModding"
-                IsEnabled="{Binding DiabloInstallDetected}"
-                Style="{StaticResource NavigationItemStyle}"
-                Tag="D2RModding">
-                <syncfusion:NavigationItem.Icon>
-                    <Image Source="pack://application:,,,/Resources/Icons/Icon_Modding.png" />
-                </syncfusion:NavigationItem.Icon>
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=D2RWebsite, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="D2RWebsite" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=Discord, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="D2RDiscord" />
-                <syncfusion:NavigationItem
-                    Header="{Binding Path=D2RYoutube, Source={StaticResource Resources}}"
-                    Style="{StaticResource NavigationItemGoldStyle}"
-                    Tag="D2RYoutube" />
-            </syncfusion:NavigationItem>
-            
-            <syncfusion:NavigationItem
-                Header="Special Events"
-                IsEnabled="{Binding DiabloInstallDetected}"
-                Style="{StaticResource NavigationItemStyle}"
-                Tag="Events">
-                <syncfusion:NavigationItem.Icon>
-                    <Image Source="pack://application:,,,/Resources/Icons/Icon_Events.png" />
-                </syncfusion:NavigationItem.Icon>
-            </syncfusion:NavigationItem>
-      
-            <syncfusion:NavigationItem
-                Header="Beacon"
-                IsEnabled="true"
-                Style="{StaticResource NavigationItemStyle}"
-                Tag="Beacon">
-                <syncfusion:NavigationItem.Icon>
-                    <Image Source="pack://application:,,,/Resources/Icons/Icon_Beacon.png" />
-                </syncfusion:NavigationItem.Icon>
-            </syncfusion:NavigationItem>
-            <syncfusion:SfNavigationDrawer.FooterItems>
-                <syncfusion:NavigationItem>
-                    <syncfusion:NavigationItem.Template>
-                        <ControlTemplate>
-                            <Label
-                                Grid.Row="6"
-                                Margin="0,10,0,0"
-                                HorizontalAlignment="Center"
-                                d:Visibility="Visible"
-                                Visibility="{Binding LauncherHasUpdate, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock
-                                    cm:Message.Attach="[Event MouseLeftButtonDown] = [Action OnUpdateLauncher];"
-                                    d:Text="D2RLAN Update Ready! (9.9.9)"
-                                    Cursor="Hand"
-                                    Style="{StaticResource UpdateTextBlockStyle}"
-                                    Text="{Binding LauncherUpdateString}"
-                                    TextDecorations="Underline">
-                                    <TextBlock.Triggers>
-                                        <EventTrigger RoutedEvent="Loaded">
-                                            <BeginStoryboard Storyboard="{StaticResource FlashAnimation}" />
-                                        </EventTrigger>
-                                    </TextBlock.Triggers>
-                                </TextBlock>
-                            </Label>
-                        </ControlTemplate>
-                    </syncfusion:NavigationItem.Template>
-                </syncfusion:NavigationItem>
-                <syncfusion:NavigationItem
-                    HorizontalAlignment="Center"
-                    Header="Bonesy"
-                    ItemType="Button"
-                    Style="{StaticResource NavigationItemOrangeStyle}"
-                    Tag="Patreon">
-                    <syncfusion:NavigationItem.Icon>
-                        <Image Source="pack://application:,,,/Resources/Icons/Icon_Patreon.png" />
-                    </syncfusion:NavigationItem.Icon>
-                </syncfusion:NavigationItem>
-            </syncfusion:SfNavigationDrawer.FooterItems>
             <syncfusion:SfNavigationDrawer.ContentView>
                 <UserControl d:Background="{StaticResource ContentBackground}" Content="{Binding UserControl}" />
             </syncfusion:SfNavigationDrawer.ContentView>
